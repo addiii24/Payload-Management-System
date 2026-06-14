@@ -47,7 +47,7 @@ const Dashboard = () => {
       {/* Welcome */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-100">Welcome back, Admin 👋</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-100">Welcome back, Sachin Sharma 👋</h2>
           <p className="mt-1 text-sm text-slate-500">Here's an overview of your payroll system.</p>
         </div>
         <span className="rounded-lg border border-white/[0.07] bg-white/[0.03] px-3.5 py-2 text-[13px] text-slate-500">

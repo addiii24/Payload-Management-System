@@ -196,10 +196,10 @@ const Layout = ({ children, title = "Dashboard" }) => {
             <div className="hidden items-center gap-2.5 sm:flex">
               <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full
                               bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white">
-                A
+                S
               </div>
               <div className="flex flex-col leading-tight">
-                <span className="text-[13px] font-semibold text-slate-200">Admin</span>
+                <span className="text-[13px] font-semibold text-slate-200">Sachin Sharma</span>
                 <span className="text-[11px] text-slate-500">Super Admin</span>
               </div>
             </div>

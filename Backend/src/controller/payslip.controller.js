@@ -13,7 +13,7 @@
  */
 
 import mongoose from "mongoose";
-import archiver from "archiver";
+import { ZipArchive} from "archiver";
 import { PassThrough } from "stream";
 
 import Payroll from "../model/payroll.model.js";
@@ -108,7 +108,7 @@ export const bulkDownloadPayslips = async (req, res) => {
     );
 
     /* ── Create archiver and pipe to response ── */
-    const archive = archiver("zip", { zlib: { level: 6 } });
+    const archive = new ZipArchive("zip", { zlib: { level: 6 } });
 
     archive.on("error", (err) => {
       console.error("[bulkDownloadPayslips] archiver error:", err);
