@@ -14,9 +14,7 @@ import cookieParser from "cookie-parser";
 import authRouter       from "./route/auth.route.js";
 import employeeRouter   from "./route/employee.route.js";
 import departmentRouter from "./route/department.route.js";
-// Future routers:
-// import payrollRouter   from "./route/payroll.route.js";
-// import authRouter      from "./route/auth.route.js";
+import payrollRouter    from "./route/payroll.route.js";
 
 // ─────────────────────────────────────────────
 //  App Initialisation
@@ -67,6 +65,9 @@ app.use("/api/employees", employeeRouter);
 
 /** Department CRUD + Policy  →  /api/departments */
 app.use("/api/departments", departmentRouter);
+
+/** Payroll Engine  →  /api/payroll */
+app.use("/api/payroll", payrollRouter);
 
 // ─────────────────────────────────────────────
 //  Global Error Handler  (must be last middleware)

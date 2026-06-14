@@ -3,12 +3,16 @@
  * @description Root React component — sets up all application routes.
  *
  *  Route tree:
- *    /login                    → <Login />         (public)
- *    /                         → <Dashboard />     (protected)
- *    /employees                → <Employees />     (protected)
- *    /employees/add            → <AddEmployee />   (protected)
- *    /employees/:id/edit       → <EditEmployee />  (protected)
- *    *                         → redirect to /login
+ *    /login                     → <Login />            (public)
+ *    /                          → <Dashboard />        (protected)
+ *    /employees                 → <Employees />        (protected)
+ *    /employees/add             → <AddEmployee />      (protected)
+ *    /employees/:id/edit        → <EditEmployee />     (protected)
+ *    /departments               → <Departments />      (protected)
+ *    /departments/:id/policy    → <DepartmentPolicy /> (protected)
+ *    /payroll/generate          → <GeneratePayroll />  (protected)
+ *    /payroll/records           → <PayrollRecords />   (protected)
+ *    *                          → redirect to /login
  */
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -26,6 +30,8 @@ const AddEmployee      = lazy(() => import("./pages/AddEmployee.jsx"));
 const EditEmployee     = lazy(() => import("./pages/EditEmployee.jsx"));
 const Departments      = lazy(() => import("./pages/Departments.jsx"));
 const DepartmentPolicy = lazy(() => import("./pages/DepartmentPolicy.jsx"));
+const GeneratePayroll  = lazy(() => import("./pages/GeneratePayroll.jsx"));
+const PayrollRecords   = lazy(() => import("./pages/PayrollRecords.jsx"));
 
 /* ── Full-page loading fallback shown during chunk download ── */
 const PageLoader = () => (
@@ -52,7 +58,9 @@ function App() {
             <Route path="/employees/add"           element={<AddEmployee />} />
             <Route path="/employees/:id/edit"      element={<EditEmployee />} />
             <Route path="/departments"             element={<Departments />} />
-            <Route path="/departments/:id/policy" element={<DepartmentPolicy />} />
+            <Route path="/departments/:id/policy"  element={<DepartmentPolicy />} />
+            <Route path="/payroll/generate"        element={<GeneratePayroll />} />
+            <Route path="/payroll/records"         element={<PayrollRecords />} />
           </Route>
 
           {/* ── Catch-all ─────────────────────────────── */}
