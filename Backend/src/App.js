@@ -11,8 +11,9 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 // ─── Feature Routers ──────────────────────────────────────────────────────────
-import authRouter     from "./route/auth.route.js";
-import employeeRouter from "./route/employee.route.js";
+import authRouter       from "./route/auth.route.js";
+import employeeRouter   from "./route/employee.route.js";
+import departmentRouter from "./route/department.route.js";
 // Future routers:
 // import payrollRouter   from "./route/payroll.route.js";
 // import authRouter      from "./route/auth.route.js";
@@ -63,6 +64,9 @@ app.use("/api/auth", authRouter);
 
 /** Employee CRUD  →  /api/employees */
 app.use("/api/employees", employeeRouter);
+
+/** Department CRUD + Policy  →  /api/departments */
+app.use("/api/departments", departmentRouter);
 
 // ─────────────────────────────────────────────
 //  Global Error Handler  (must be last middleware)

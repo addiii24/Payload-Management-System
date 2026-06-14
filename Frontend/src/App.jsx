@@ -20,10 +20,12 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Login from "./pages/Login.jsx";
 
 // Lazily loaded (only fetched when user navigates there)
-const Dashboard   = lazy(() => import("./pages/Dashboard.jsx"));
-const Employees   = lazy(() => import("./pages/Employees.jsx"));
-const AddEmployee = lazy(() => import("./pages/AddEmployee.jsx"));
-const EditEmployee = lazy(() => import("./pages/EditEmployee.jsx"));
+const Dashboard        = lazy(() => import("./pages/Dashboard.jsx"));
+const Employees        = lazy(() => import("./pages/Employees.jsx"));
+const AddEmployee      = lazy(() => import("./pages/AddEmployee.jsx"));
+const EditEmployee     = lazy(() => import("./pages/EditEmployee.jsx"));
+const Departments      = lazy(() => import("./pages/Departments.jsx"));
+const DepartmentPolicy = lazy(() => import("./pages/DepartmentPolicy.jsx"));
 
 /* ── Full-page loading fallback shown during chunk download ── */
 const PageLoader = () => (
@@ -49,6 +51,8 @@ function App() {
             <Route path="/employees"               element={<Employees />} />
             <Route path="/employees/add"           element={<AddEmployee />} />
             <Route path="/employees/:id/edit"      element={<EditEmployee />} />
+            <Route path="/departments"             element={<Departments />} />
+            <Route path="/departments/:id/policy" element={<DepartmentPolicy />} />
           </Route>
 
           {/* ── Catch-all ─────────────────────────────── */}
