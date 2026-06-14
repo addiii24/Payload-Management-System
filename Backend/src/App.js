@@ -15,6 +15,7 @@ import authRouter       from "./route/auth.route.js";
 import employeeRouter   from "./route/employee.route.js";
 import departmentRouter from "./route/department.route.js";
 import payrollRouter    from "./route/payroll.route.js";
+import payslipRouter    from "./route/payslip.route.js";
 
 // ─────────────────────────────────────────────
 //  App Initialisation
@@ -68,6 +69,9 @@ app.use("/api/departments", departmentRouter);
 
 /** Payroll Engine  →  /api/payroll */
 app.use("/api/payroll", payrollRouter);
+
+/** Payslip PDF generation  →  /api/payslips */
+app.use("/api/payslips", payslipRouter);
 
 // ─────────────────────────────────────────────
 //  Global Error Handler  (must be last middleware)

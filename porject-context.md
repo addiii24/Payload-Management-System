@@ -1,104 +1,344 @@
 # Payroll Management System
 
-Purpose:
-Personal-use payroll software for HR operations in an Automotive Company.
+## Purpose
 
-Tech Stack:
-- React + Vite
-- TailwindCSS
-- Express.js
-- MongoDB
-- JWT Authentication
+Personal-use Payroll Management System for HR operations in an Automotive Company.
 
-Current Status:
-✅ MongoDB Connected
-✅ Backend Running
-✅ Employee CRUD APIs Working
-✅ Authentication Working
+Goal:
+
+* Reduce manual payroll workload
+* Manage employees
+* Configure department-wise payroll policies
+* Generate payroll automatically
+* Generate payslips on demand
+* Download individual or bulk payslips
+
+---
+
+## Tech Stack
+
+Frontend:
+
+* React
+* Vite
+* TailwindCSS
+* Axios
+* React Router
+
+Backend:
+
+* Node.js
+* Express.js
+
+Database:
+
+* MongoDB
+* Mongoose
+
+Authentication:
+
+* JWT
+
+PDF:
+
+* PDFKit
+
+Bulk Download:
+
+* Archiver
+
+---
+
+## Current Status
+
+Completed:
+
+✅ Authentication
+
 ✅ Protected Routes
 
-Architecture:
+✅ Dashboard
+
+✅ Employee Management
+
+✅ Department Management
+
+✅ Department Policy Management
+
+✅ Payroll Generation
+
+In Progress:
+
+🔄 Payslip Generation
+
+🔄 Bulk Payslip Download
+
+Future:
+
+⏳ Reports & Analytics
+
+⏳ Attendance Integration
+
+⏳ Leave Management
+
+---
+
+## Application Flow
 
 Login
- ↓
+↓
 Dashboard
- ↓
+↓
 Employees
- ↓
+↓
 Departments
- ↓
+↓
 Department Policies
- ↓
+↓
 Generate Payroll
- ↓
+↓
 Payroll History
- ↓
-Payslip Download
+↓
+Download Payslip
 
-Core Design Rules:
+---
 
-1. No state rules hardcoded.
-2. No PF/ESI/Bonus hardcoded.
-3. Everything must be configurable from UI.
-4. Department policies control deductions.
-5. All deductions stored as percentages.
-6. Payroll calculations use percentages from DB.
-7. Payroll data stored in DB.
-8. PDF payslips NOT stored in DB.
-9. Payslips generated on demand.
-10. Bulk download generates temporary ZIP.
+## Core Design Principles
 
-Collections:
+### Rule 1
 
-employees
-departments
-departmentPolicies
-payrolls
+No payroll rules are hardcoded.
 
-Department Policy Example:
+Never hardcode:
+
+* PF
+* ESI
+* Bonus
+* Professional Tax
+* Other deductions
+
+Everything must come from database policies.
+
+---
+
+### Rule 2
+
+Department-based payroll policies.
+
+Each department can have completely different deductions.
+
+Example:
+
+Production:
+
+* PF
+* ESI
+* PT
+
+IT:
+
+* PF
+* PT
+
+Management:
+
+* Custom Bonus
+* Custom PF
+
+---
+
+### Rule 3
+
+All deductions are percentage based.
+
+Example:
 
 {
-  department: "Production",
-
-  deductions: [
-    {
-      name: "PF",
-      percentage: 12
-    },
-    {
-      name: "ESI",
-      percentage: 0.75
-    }
-  ]
+name: "PF",
+percentage: 12
 }
-
-Payroll Example:
 
 {
-  employeeId: "...",
-
-  month: 6,
-  year: 2026,
-
-  grossSalary: 30000,
-
-  deductions: [
-    {
-      name: "PF",
-      percentage: 12,
-      amount: 3600
-    }
-  ],
-
-  totalDeduction: 3600,
-
-  netSalary: 26400
+name: "ESI",
+percentage: 0.75
 }
 
-Important:
+Backend calculates deduction amount from percentages.
 
-- Use existing architecture.
-- Do not rewrite existing code.
-- Generate only requested feature.
-- Follow MVC architecture.
-- Use reusable components.
+---
+
+### Rule 4
+
+Payroll engine is dynamic.
+
+Payroll Engine:
+
+Employee
+↓
+Department
+↓
+Department Policy
+↓
+Calculate Deductions
+↓
+Generate Payroll
+
+No fixed deduction functions.
+
+Use dynamic deduction arrays.
+
+---
+
+### Rule 5
+
+Payroll records are stored.
+
+Payslip PDFs are NOT stored.
+
+Only payroll data is stored.
+
+---
+
+## Collections
+
+### employees
+
+Stores employee master data.
+
+### departments
+
+Stores department information.
+
+### departmentPolicies
+
+Stores deduction configuration.
+
+Example:
+
+{
+departmentId,
+
+deductions: [
+{
+name: "PF",
+percentage: 12
+},
+{
+name: "ESI",
+percentage: 0.75
+}
+]
+}
+
+### payrolls
+
+Stores generated payroll data.
+
+Example:
+
+{
+employeeId,
+
+month,
+year,
+
+grossSalary,
+
+deductions: [
+{
+name: "PF",
+percentage: 12,
+amount: 3600
+}
+],
+
+totalDeduction,
+
+netSalary
+}
+
+---
+
+## Payslip Strategy
+
+IMPORTANT
+
+Do NOT store PDFs.
+
+Do NOT create payslip collection.
+
+Do NOT save PDF files permanently.
+
+Generate PDF on demand.
+
+Flow:
+
+Payroll Record
+↓
+Generate PDF
+↓
+Return File
+
+---
+
+## Bulk Download Strategy
+
+Generate ZIP on demand.
+
+Flow:
+
+Payroll Records
+↓
+Generate PDFs
+↓
+Create ZIP
+↓
+Download ZIP
+↓
+Delete Temporary Resources
+
+No permanent storage.
+
+---
+
+## Backend Architecture
+
+config/
+models/
+controllers/
+routes/
+middleware/
+services/
+utils/
+
+Use MVC Architecture.
+
+Business logic belongs in services.
+
+---
+
+## Frontend Architecture
+
+pages/
+components/
+services/
+layouts/
+
+Use reusable components.
+
+Use service layer for API calls.
+
+---
+
+## Antigravity Rules
+
+When generating code:
+
+1. Read this file first.
+2. Do not redesign architecture.
+3. Do not modify completed modules.
+4. Generate only requested feature.
+5. Reuse existing APIs when possible.
+6. Follow MVC architecture.
+7. Use scalable and production-ready code.
+8. Keep token usage minimal.

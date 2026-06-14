@@ -32,6 +32,7 @@ const Departments      = lazy(() => import("./pages/Departments.jsx"));
 const DepartmentPolicy = lazy(() => import("./pages/DepartmentPolicy.jsx"));
 const GeneratePayroll  = lazy(() => import("./pages/GeneratePayroll.jsx"));
 const PayrollRecords   = lazy(() => import("./pages/PayrollRecords.jsx"));
+const PayrollHistory   = lazy(() => import("./pages/PayrollHistory.jsx"));
 
 /* ── Full-page loading fallback shown during chunk download ── */
 const PageLoader = () => (
@@ -61,6 +62,7 @@ function App() {
             <Route path="/departments/:id/policy"  element={<DepartmentPolicy />} />
             <Route path="/payroll/generate"        element={<GeneratePayroll />} />
             <Route path="/payroll/records"         element={<PayrollRecords />} />
+            <Route path="/payroll/history"         element={<PayrollHistory />} />
           </Route>
 
           {/* ── Catch-all ─────────────────────────────── */}
