@@ -30,9 +30,11 @@ const AddEmployee      = lazy(() => import("./pages/AddEmployee.jsx"));
 const EditEmployee     = lazy(() => import("./pages/EditEmployee.jsx"));
 const Departments      = lazy(() => import("./pages/Departments.jsx"));
 const DepartmentPolicy = lazy(() => import("./pages/DepartmentPolicy.jsx"));
-const GeneratePayroll  = lazy(() => import("./pages/GeneratePayroll.jsx"));
-const PayrollRecords   = lazy(() => import("./pages/PayrollRecords.jsx"));
-const PayrollHistory   = lazy(() => import("./pages/PayrollHistory.jsx"));
+const GeneratePayroll    = lazy(() => import("./pages/GeneratePayroll.jsx"));
+const PayrollRecords     = lazy(() => import("./pages/PayrollRecords.jsx"));
+const PayrollHistory     = lazy(() => import("./pages/PayrollHistory.jsx"));
+const ShiftMaster        = lazy(() => import("./pages/ShiftMaster.jsx"));
+const ShiftAttendancePage = lazy(() => import("./pages/ShiftAttendance.jsx"));
 
 /* ── Full-page loading fallback shown during chunk download ── */
 const PageLoader = () => (
@@ -63,6 +65,8 @@ function App() {
             <Route path="/payroll/generate"        element={<GeneratePayroll />} />
             <Route path="/payroll/records"         element={<PayrollRecords />} />
             <Route path="/payroll/history"         element={<PayrollHistory />} />
+            <Route path="/shift-master"            element={<ShiftMaster />} />
+            <Route path="/shift-attendance"        element={<ShiftAttendancePage />} />
           </Route>
 
           {/* ── Catch-all ─────────────────────────────── */}

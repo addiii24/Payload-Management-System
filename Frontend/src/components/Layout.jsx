@@ -72,6 +72,28 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  { isLabel: true, label: "Shift & Attendance" },
+  {
+    to: "/shift-master",
+    label: "Shift Master",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+      </svg>
+    ),
+  },
+  {
+    to: "/shift-attendance",
+    label: "Shift Attendance",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <polyline points="16 11 18 13 22 9" />
+      </svg>
+    ),
+  },
   {
     to: "/reports",
     label: "Reports",
@@ -84,7 +106,6 @@ const NAV_ITEMS = [
     ),
   },
 ];
-
 
 const Layout = ({ children, title = "Dashboard" }) => {
   const navigate  = useNavigate();
@@ -124,8 +145,17 @@ const Layout = ({ children, title = "Dashboard" }) => {
         </div>
 
         {/* Nav */}
-        <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
-          {NAV_ITEMS.map((item) => {
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
+          {NAV_ITEMS.map((item, idx) => {
+            /* ── Section label (non-link divider) ── */
+            if (item.isLabel) {
+              return (
+                <p key={`label-${idx}`}
+                  className="mt-3 mb-1 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-600">
+                  {item.label}
+                </p>
+              );
+            }
             const active = location.pathname === item.to ||
               (item.to !== "/" && location.pathname.startsWith(item.to));
             return (

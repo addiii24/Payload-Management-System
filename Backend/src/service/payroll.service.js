@@ -1,133 +1,168 @@
 /**
  * @file payroll.service.js
- * @description Core payroll calculation logic.
+ * @description Core payroll calculation logic (Architecture v2).
  *
- *  Responsibilities:
- *    1. Resolve an employee's department to a DepartmentPolicy.
- *    2. Apply each percentage deduction to the employee's basicSalary.
- *    3. Return a ready-to-save payroll data object (does NOT write to DB).
+ *  Correct formula:
+ *    Step 1: grossSalary = basicSalary + hra + otherAllowances
+ *    Step 2: deductions  = percentage rules applied ONLY to grossSalary
+ *    Step 3: shiftAllowance = Σ(daysWorked × ratePerDay) from ShiftAttendance
+ *            overtimeAmount = Σ(hours × ratePerHour) from OvertimeRecord
+ *            totalAdditions = shiftAllowance + overtimeAmount
+ *    Step 4: netPay = grossSalary − totalDeductions + totalAdditions
  *
- *  Separation of concerns:
- *    - This service is pure calculation — no Express req/res.
- *    - The controller calls this service, then persists the result.
- *    - This makes the engine independently unit-testable.
- *
- *  Lookup strategy:
- *    Employee.department is a plain string (e.g. "Production").
- *    DepartmentPolicy is linked to a Department document via departmentId.
- *    We match Department.departmentName (case-insensitive) to Employee.department,
- *    then load the associated DepartmentPolicy.
+ *  Key constraint: additions are NEVER part of Gross.
+ *  Deductions (PF, ESI) are calculated on basic+hra+other only.
  */
 
 import Department       from "../model/department.model.js";
 import DepartmentPolicy from "../model/departmentPolicy.model.js";
+import ShiftAttendance  from "../model/shiftAttendance.model.js";
+import OvertimeRecord   from "../model/overtimeRecord.model.js";
 
-/**
- * Calculate deductions and net salary for a single employee.
- *
- * @param {object} employee  - Mongoose Employee document (populated)
- * @param {number} month     - 1–12
- * @param {number} year      - e.g. 2026
- *
- * @returns {Promise<{
- *   employeeId:    ObjectId,
- *   employeeName:  string,
- *   employeeCode:  string,
- *   department:    string,
- *   designation:   string,
- *   month:         number,
- *   year:          number,
- *   grossSalary:   number,
- *   deductions:    Array<{ name, percentage, amount }>,
- *   totalDeduction: number,
- *   netSalary:     number,
- *   status:        "processed"
- * }>}
- *
- * @throws {Error} If no department found or policy cannot be resolved.
- */
+const round2 = (n) => Math.round(n * 100) / 100;
+
+/* ═══════════════════════════════════════════════════════════════
+   SHIFT ALLOWANCE
+   Returns 0 gracefully when employee has no attendance records.
+═══════════════════════════════════════════════════════════════ */
+const calcShiftAllowance = async (employeeId, month, year) => {
+  const records = await ShiftAttendance.find({ employeeId, month, year })
+    .populate("shiftId", "shiftName allowancePerDay");
+
+  if (!records.length) return { shiftAllowance: 0, shiftBreakdown: [] };
+
+  let total = 0;
+  const breakdown = [];
+
+  for (const r of records) {
+    const shift = r.shiftId;
+    if (!shift) continue;
+    const ratePerDay = shift.allowancePerDay ?? 0;
+    const lineTotal  = round2(r.daysWorked * ratePerDay);
+    total += lineTotal;
+    breakdown.push({
+      shiftName: shift.shiftName,
+      daysWorked: r.daysWorked,
+      ratePerDay,
+      total: lineTotal,
+    });
+  }
+
+  return { shiftAllowance: round2(total), shiftBreakdown: breakdown };
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   OVERTIME
+   Returns 0 gracefully when employee has no OT records.
+═══════════════════════════════════════════════════════════════ */
+const calcOvertime = async (employeeId, month, year) => {
+  const records = await OvertimeRecord.find({ employeeId, month, year });
+
+  if (!records.length) return { overtimeAmount: 0, overtimeBreakdown: [] };
+
+  let total = 0;
+  const breakdown = [];
+
+  for (const r of records) {
+    total += r.totalAmount;
+    breakdown.push({
+      otType:      r.otType,
+      hours:       r.hours,
+      ratePerHour: r.ratePerHour,
+      total:       r.totalAmount,
+    });
+  }
+
+  return { overtimeAmount: round2(total), overtimeBreakdown: breakdown };
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   SINGLE EMPLOYEE PAYROLL
+═══════════════════════════════════════════════════════════════ */
 export const calculatePayroll = async (employee, month, year) => {
-  const grossSalary = employee.basicSalary;
 
-  /* ── Step 1: Find the Department by name (case-insensitive) ── */
-  const department = await Department.findOne({
+  /* Step 1 — Gross = basic + hra + other */
+  const basicSalary     = employee.basicSalary    ?? 0;
+  const hra             = employee.hra             ?? 0;
+  const otherAllowances = employee.otherAllowances ?? 0;
+  const grossSalary     = round2(basicSalary + hra + otherAllowances);
+
+  /* Step 2 — Deductions (applied ONLY to grossSalary) */
+  const dept = await Department.findOne({
     departmentName: { $regex: `^${employee.department.trim()}$`, $options: "i" },
     isActive: true,
   });
-
-  if (!department) {
+  if (!dept) {
     throw new Error(
       `Department "${employee.department}" not found or is inactive. ` +
       `Please create it and configure a policy before generating payroll.`
     );
   }
 
-  /* ── Step 2: Load the DepartmentPolicy ── */
-  const policy = await DepartmentPolicy.findOne({ departmentId: department._id });
-
-  // An empty deductions array is valid — employee gets 0 deductions
+  const policy       = await DepartmentPolicy.findOne({ departmentId: dept._id });
   const deductionRules = policy?.deductions ?? [];
 
-  /* ── Step 3: Apply each deduction ── */
   let totalDeduction = 0;
   const deductions = deductionRules.map((rule) => {
-    // Round to 2 decimal places to avoid floating-point drift
-    const amount = Math.round(((rule.percentage / 100) * grossSalary) * 100) / 100;
+    const amount = round2((rule.percentage / 100) * grossSalary);
     totalDeduction += amount;
-    return {
-      name:       rule.name,
-      percentage: rule.percentage,
-      amount,
-    };
+    return { name: rule.name, percentage: rule.percentage, amount };
   });
+  totalDeduction = round2(totalDeduction);
 
-  // Final round to prevent accumulated floating-point error
-  totalDeduction = Math.round(totalDeduction * 100) / 100;
-  const netSalary   = Math.round((grossSalary - totalDeduction) * 100) / 100;
+  /* Step 3 — Additions (post-deduction) */
+  const [shiftResult, otResult] = await Promise.all([
+    calcShiftAllowance(employee._id, month, year),
+    calcOvertime(employee._id, month, year),
+  ]);
+
+  const { shiftAllowance, shiftBreakdown }         = shiftResult;
+  const { overtimeAmount, overtimeBreakdown }       = otResult;
+  const totalAdditions = round2(shiftAllowance + overtimeAmount);
+
+  /* Step 4 — Net Pay */
+  const netSalary = round2(grossSalary - totalDeduction + totalAdditions);
 
   return {
-    employeeId:    employee._id,
-    employeeName:  employee.name,
-    employeeCode:  employee.employeeId,   // human-readable code e.g. "EMP001"
-    department:    employee.department,
-    designation:   employee.designation,
+    employeeId:        employee._id,
+    employeeName:      employee.name,
+    employeeCode:      employee.employeeId,
+    department:        employee.department,
+    designation:       employee.designation,
     month,
     year,
+    /* earnings */
+    basicSalary,
+    hra,
+    otherAllowances,
     grossSalary,
+    /* deductions */
     deductions,
     totalDeduction,
+    /* additions */
+    shiftAllowance,
+    shiftBreakdown,
+    overtimeAmount,
+    overtimeBreakdown,
+    totalAdditions,
+    /* net */
     netSalary,
     status: "processed",
   };
 };
 
-/**
- * Calculate payroll for multiple employees in one pass.
- * Returns both successful results and per-employee errors.
- *
- * @param {object[]} employees  - Array of Mongoose Employee documents
- * @param {number}   month
- * @param {number}   year
- *
- * @returns {Promise<{
- *   results: object[],
- *   errors:  Array<{ employeeCode: string, name: string, error: string }>
- * }>}
- */
+/* ═══════════════════════════════════════════════════════════════
+   BULK PAYROLL — wrapper that collects errors per employee
+═══════════════════════════════════════════════════════════════ */
 export const calculateBulkPayroll = async (employees, month, year) => {
   const results = [];
   const errors  = [];
 
   for (const emp of employees) {
     try {
-      const payrollData = await calculatePayroll(emp, month, year);
-      results.push(payrollData);
+      results.push(await calculatePayroll(emp, month, year));
     } catch (err) {
-      errors.push({
-        employeeCode: emp.employeeId,
-        name:         emp.name,
-        error:        err.message,
-      });
+      errors.push({ employeeCode: emp.employeeId, name: emp.name, error: err.message });
     }
   }
 

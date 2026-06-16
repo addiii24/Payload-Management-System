@@ -11,11 +11,13 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 // ─── Feature Routers ──────────────────────────────────────────────────────────
-import authRouter       from "./route/auth.route.js";
-import employeeRouter   from "./route/employee.route.js";
-import departmentRouter from "./route/department.route.js";
-import payrollRouter    from "./route/payroll.route.js";
-import payslipRouter    from "./route/payslip.route.js";
+import authRouter            from "./route/auth.route.js";
+import employeeRouter        from "./route/employee.route.js";
+import departmentRouter      from "./route/department.route.js";
+import payrollRouter         from "./route/payroll.route.js";
+import payslipRouter         from "./route/payslip.route.js";
+import shiftRouter           from "./route/shift.route.js";
+import shiftAttendanceRouter from "./route/shiftAttendance.route.js";
 
 // ─────────────────────────────────────────────
 //  App Initialisation
@@ -72,6 +74,12 @@ app.use("/api/payroll", payrollRouter);
 
 /** Payslip PDF generation  →  /api/payslips */
 app.use("/api/payslips", payslipRouter);
+
+/** Shift master CRUD  →  /api/shifts */
+app.use("/api/shifts", shiftRouter);
+
+/** Shift attendance CRUD  →  /api/shift-attendance */
+app.use("/api/shift-attendance", shiftAttendanceRouter);
 
 // ─────────────────────────────────────────────
 //  Global Error Handler  (must be last middleware)

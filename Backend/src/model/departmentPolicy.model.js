@@ -50,6 +50,17 @@ const departmentPolicySchema = new Schema(
       type: [deductionSchema],
       default: [],
     },
+
+    /**
+     * Overtime rates (₹ per hour) — configurable per department.
+     * All default to 0 so departments without OT simply contribute 0.
+     * NEVER hardcode these — always read from this policy.
+     */
+    otRates: {
+      dailyOT:     { type: Number, default: 0, min: 0 },  // normal weekday extra hours
+      weeklyOffOT: { type: Number, default: 0, min: 0 },  // weekly-off day
+      holidayOT:   { type: Number, default: 0, min: 0 },  // national / festival holiday
+    },
   },
   {
     timestamps: true,

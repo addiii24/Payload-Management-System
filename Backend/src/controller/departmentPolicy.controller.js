@@ -60,7 +60,7 @@ export const savePolicy = async (req, res) => {
     const { id } = req.params;
     if (!isValidId(id)) return sendError(res, 400, "Invalid department ID.");
 
-    const { deductions } = req.body;
+    const { deductions, otRates } = req.body;
     if (!Array.isArray(deductions)) {
       return sendError(res, 400, "'deductions' must be an array.");
     }
@@ -77,15 +77,31 @@ export const savePolicy = async (req, res) => {
       }
     }
 
-    // Validate total deductions do not exceed 100%
     const totalPct = deductions.reduce((sum, d) => sum + Number(d.percentage), 0);
     if (totalPct > 100) {
       return sendError(res, 400, `Total deduction percentage (${totalPct}%) cannot exceed 100%.`);
     }
 
+    /* Build the $set payload */
+    const setPayload = { deductions };
+
+    /* Validate and include otRates if provided */
+    if (otRates && typeof otRates === "object") {
+      const rateFields = ["dailyOT", "weeklyOffOT", "holidayOT"];
+      for (const field of rateFields) {
+        if (otRates[field] !== undefined) {
+          const val = Number(otRates[field]);
+          if (isNaN(val) || val < 0) {
+            return sendError(res, 400, `otRates.${field} must be a non-negative number.`);
+          }
+          setPayload[`otRates.${field}`] = val;
+        }
+      }
+    }
+
     const policy = await DepartmentPolicy.findOneAndUpdate(
       { departmentId: id },
-      { $set: { deductions } },
+      { $set: setPayload },
       { new: true, upsert: true, runValidators: true }
     );
 
@@ -99,6 +115,7 @@ export const savePolicy = async (req, res) => {
     return sendError(res, 500, "Failed to save policy.");
   }
 };
+
 
 /* ──────────────────────────────────────────────────────────────
    ADD DEDUCTION  POST /api/departments/:id/policy/deductions
