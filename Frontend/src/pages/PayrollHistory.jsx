@@ -50,86 +50,151 @@ const SCard = ({ label, value, sub, color, bg }) => (
 );
 
 /* ── Deduction breakdown modal ── */
-const DeductionPanel = ({ record, onClose }) => (
-  <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 overflow-y-auto">
-    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-    <div className="relative z-10 my-auto w-full max-w-md rounded-2xl border border-white/[0.1]
-                    bg-[#0d1117] shadow-[0_30px_60px_rgba(0,0,0,0.7)]">
+const DeductionPanel = ({ record, onClose }) => {
+  const totAdditions = record.totalAdditions ?? (record.shiftAllowance + (record.overtimeAmount || 0));
 
-      {/* Header */}
-      <div className="flex items-start justify-between border-b border-white/[0.07] px-6 py-4">
-        <div>
-          <span className="rounded-md bg-indigo-500/15 px-2 py-0.5 font-mono text-xs font-bold text-indigo-400">
-            {record.employeeCode}
-          </span>
-          <h3 className="mt-1.5 text-base font-bold text-slate-100">{record.employeeName}</h3>
-          <p className="text-[12px] text-slate-500">{record.designation} · {record.department}</p>
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative z-10 my-auto w-full max-w-md rounded-2xl border border-white/[0.1]
+                      bg-[#0d1117] shadow-[0_30px_60px_rgba(0,0,0,0.7)] max-h-[90vh] overflow-y-auto">
+
+        {/* Header */}
+        <div className="flex items-start justify-between border-b border-white/[0.07] px-6 py-4">
+          <div>
+            <span className="rounded-md bg-indigo-500/15 px-2 py-0.5 font-mono text-xs font-bold text-indigo-400">
+              {record.employeeCode}
+            </span>
+            <h3 className="mt-1.5 text-base font-bold text-slate-100">{record.employeeName}</h3>
+            <p className="text-[12px] text-slate-500">{record.designation} · {record.department}</p>
+          </div>
+          <button onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300 transition-colors">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
-        <button onClick={onClose}
-          className="rounded-lg p-1.5 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300 transition-colors">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
 
-      {/* Period */}
-      <div className="flex justify-between border-b border-white/[0.07] px-6 py-3 text-sm">
-        <span className="text-slate-500">Pay Period</span>
-        <span className="font-semibold text-slate-200">{MONTHS[record.month - 1]} {record.year}</span>
-      </div>
-
-      {/* Earnings */}
-      <div className="px-6 pt-4">
-        <div className="flex items-center justify-between rounded-xl border border-emerald-500/15
-                        bg-emerald-500/[0.07] px-4 py-3">
-          <span className="text-sm font-medium text-slate-400">Gross Salary</span>
-          <span className="text-base font-bold text-emerald-400">{INR(record.grossSalary)}</span>
+        {/* Period */}
+        <div className="flex justify-between border-b border-white/[0.07] px-6 py-3 text-sm">
+          <span className="text-slate-500">Pay Period</span>
+          <span className="font-semibold text-slate-200">{MONTHS[record.month - 1]} {record.year}</span>
         </div>
-      </div>
 
-      {/* Deductions */}
-      <div className="px-6 py-4">
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">Deductions</p>
-        {record.deductions?.length > 0 ? (
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-white/[0.06]">
-                <th className="pb-2 text-left text-[11px] font-semibold text-slate-600 uppercase tracking-wider">Name</th>
-                <th className="pb-2 text-center text-[11px] font-semibold text-slate-600 uppercase tracking-wider">Rate</th>
-                <th className="pb-2 text-right text-[11px] font-semibold text-slate-600 uppercase tracking-wider">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/[0.04]">
+        {/* Section A: Earnings */}
+        <div className="px-6 py-3.5 border-b border-white/[0.07]">
+          <h4 className="mb-2 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500">
+            Earnings (Section A)
+          </h4>
+          <div className="space-y-1.5 text-sm text-slate-300">
+            <div className="flex justify-between">
+              <span>Basic Salary</span>
+              <span className="font-medium text-slate-200">{INR(record.basicSalary)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>HRA</span>
+              <span className="font-medium text-slate-200">{INR(record.hra)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Other Allowances</span>
+              <span className="font-medium text-slate-200">{INR(record.otherAllowances)}</span>
+            </div>
+            <div className="flex justify-between rounded-lg bg-emerald-500/[0.07] px-3 py-1.5 text-emerald-400 font-bold mt-2">
+              <span>GROSS SALARY</span>
+              <span>{INR(record.grossSalary)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Section B: Deductions */}
+        <div className="px-6 py-3.5 border-b border-white/[0.07]">
+          <h4 className="mb-2 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500">
+            Deductions (Section B)
+          </h4>
+          {record.deductions?.length > 0 ? (
+            <div className="space-y-1.5 text-sm">
               {record.deductions.map((d, i) => (
-                <tr key={i}>
-                  <td className="py-2.5 text-slate-300">{d.name}</td>
-                  <td className="py-2.5 text-center text-slate-500">{pct(d.percentage)}</td>
-                  <td className="py-2.5 text-right font-medium text-red-400">−{INR(d.amount)}</td>
-                </tr>
+                <div key={i} className="flex justify-between text-slate-300">
+                  <span>{d.name} ({pct(d.percentage)})</span>
+                  <span className="font-medium text-red-400">−{INR(d.amount)}</span>
+                </div>
               ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t border-white/[0.07]">
-                <td colSpan={2} className="pt-2.5 text-sm font-semibold text-slate-400">Total Deduction</td>
-                <td className="pt-2.5 text-right font-bold text-red-400">−{INR(record.totalDeduction)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        ) : (
-          <p className="text-center text-sm text-slate-600 py-4">No deductions applied.</p>
-        )}
-      </div>
+              <div className="flex justify-between rounded-lg bg-red-500/[0.07] px-3 py-1.5 text-red-400 font-bold mt-2">
+                <span>TOTAL DEDUCTIONS</span>
+                <span>−{INR(record.totalDeduction)}</span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-sm text-slate-600 py-2">No deductions applied.</p>
+          )}
+        </div>
 
-      {/* Net Pay */}
-      <div className="mx-6 mb-5 flex items-center justify-between rounded-xl
-                      border border-indigo-500/20 bg-indigo-500/10 px-5 py-3.5">
-        <span className="text-sm font-bold text-slate-200">Net Salary</span>
-        <span className="text-xl font-bold text-indigo-300">{INR(record.netSalary)}</span>
+        {/* Section C: Additions */}
+        <div className="px-6 py-3.5 border-b border-white/[0.07]">
+          <h4 className="mb-2 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500">
+            Additions (Section C)
+          </h4>
+          <div className="space-y-2.5 text-sm">
+            {/* Shift Allowance */}
+            {record.shiftAllowance > 0 && (
+              <div>
+                <div className="flex justify-between font-semibold text-slate-200">
+                  <span>Shift Allowance</span>
+                  <span>+{INR(record.shiftAllowance)}</span>
+                </div>
+                {record.shiftBreakdown?.map((sb, idx) => (
+                  <div key={idx} className="pl-4 text-xs text-slate-500 flex justify-between mt-0.5">
+                    <span>└ {sb.shiftName} ({sb.daysWorked}d × {INR(sb.ratePerDay)})</span>
+                    <span>{INR(sb.total)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Overtime */}
+            {record.overtimeAmount > 0 && (
+              <div>
+                <div className="flex justify-between font-semibold text-slate-200">
+                  <span>Overtime (OT)</span>
+                  <span>+{INR(record.overtimeAmount)}</span>
+                </div>
+                {record.overtimeBreakdown?.map((ob, idx) => (
+                  <div key={idx} className="pl-4 text-xs text-slate-500 flex justify-between mt-0.5">
+                    <span>└ {OT_LABELS[ob.otType] ?? ob.otType} ({ob.hours} hrs × {INR(ob.ratePerHour)}/hr)</span>
+                    <span>{INR(ob.total)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {record.shiftAllowance === 0 && (!record.overtimeAmount || record.overtimeAmount === 0) && (
+              <p className="text-center text-sm text-slate-600 py-2">No additions applied.</p>
+            )}
+
+            {(record.shiftAllowance > 0 || record.overtimeAmount > 0) && (
+              <div className="flex justify-between rounded-lg bg-indigo-500/[0.07] px-3 py-1.5 text-indigo-400 font-bold mt-2">
+                <span>TOTAL ADDITIONS</span>
+                <span>+{INR(totAdditions)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Net Salary Calculation Formula */}
+        <div className="mx-6 my-4 p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/10">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-sm font-bold text-slate-200">NET PAY</span>
+            <span className="text-lg font-bold text-indigo-300">{INR(record.netSalary)}</span>
+          </div>
+          <div className="text-[10px] text-slate-500 font-mono text-center">
+            Formula: Gross ({INR(record.grossSalary)}) − Deductions ({INR(record.totalDeduction)}) + Additions ({INR(totAdditions)})
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ════════════════════════════════════════════════════════════ */
 const PayrollHistory = () => {

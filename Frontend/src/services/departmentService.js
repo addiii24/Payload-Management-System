@@ -40,8 +40,8 @@ export const getPolicy = async (departmentId) => {
 };
 
 /** Bulk-replace all deductions for a department */
-export const savePolicy = async (departmentId, deductions) => {
-  const res = await api.put(`/api/departments/${departmentId}/policy`, { deductions });
+export const savePolicy = async (departmentId, deductions, otRates) => {
+  const res = await api.put(`/api/departments/${departmentId}/policy`, { deductions, otRates });
   return res.data;
 };
 

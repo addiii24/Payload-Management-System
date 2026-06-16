@@ -18,6 +18,7 @@ import payrollRouter         from "./route/payroll.route.js";
 import payslipRouter         from "./route/payslip.route.js";
 import shiftRouter           from "./route/shift.route.js";
 import shiftAttendanceRouter from "./route/shiftAttendance.route.js";
+import overtimeRouter        from "./route/overtime.route.js";
 
 // ─────────────────────────────────────────────
 //  App Initialisation
@@ -80,6 +81,10 @@ app.use("/api/shifts", shiftRouter);
 
 /** Shift attendance CRUD  →  /api/shift-attendance */
 app.use("/api/shift-attendance", shiftAttendanceRouter);
+
+/** Overtime CRUD  →  /api/overtime */
+app.use("/api/overtime", overtimeRouter);
+
 
 // ─────────────────────────────────────────────
 //  Global Error Handler  (must be last middleware)

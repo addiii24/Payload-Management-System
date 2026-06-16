@@ -83,6 +83,11 @@ const DepartmentPolicy = () => {
 
   const [department, setDepartment] = useState(null);
   const [rows,       setRows]       = useState([]);   // { _id?, name, percentage }
+  const [otRates,    setOtRates]    = useState({      // Overtime rates (₹/hr)
+    dailyOT: "",
+    weeklyOffOT: "",
+    holidayOT: "",
+  });
   const [fetching,   setFetching]   = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState("");
@@ -107,6 +112,13 @@ const DepartmentPolicy = () => {
           name:       d.name,
           percentage: d.percentage,
         })));
+        // Clone OT rates into local state
+        const rates = res.data.policy.otRates || {};
+        setOtRates({
+          dailyOT: rates.dailyOT !== undefined ? rates.dailyOT : "",
+          weeklyOffOT: rates.weeklyOffOT !== undefined ? rates.weeklyOffOT : "",
+          holidayOT: rates.holidayOT !== undefined ? rates.holidayOT : "",
+        });
       } else {
         setError(res.message || "Failed to load policy.");
       }
@@ -148,6 +160,21 @@ const DepartmentPolicy = () => {
     }
     const total = rows.reduce((s, r) => s + Number(r.percentage), 0);
     if (total > 100) return `Total deductions (${total.toFixed(2)}%) exceed 100%.`;
+
+    // Overtime rates validation
+    const daily = Number(otRates.dailyOT);
+    if (otRates.dailyOT !== "" && (isNaN(daily) || daily < 0)) {
+      return "Daily OT rate must be a non-negative number.";
+    }
+    const weekly = Number(otRates.weeklyOffOT);
+    if (otRates.weeklyOffOT !== "" && (isNaN(weekly) || weekly < 0)) {
+      return "Weekly Off OT rate must be a non-negative number.";
+    }
+    const holiday = Number(otRates.holidayOT);
+    if (otRates.holidayOT !== "" && (isNaN(holiday) || holiday < 0)) {
+      return "Holiday OT rate must be a non-negative number.";
+    }
+
     return "";
   };
 
@@ -162,7 +189,12 @@ const DepartmentPolicy = () => {
         name: name.trim(),
         percentage: Number(percentage),
       }));
-      const res = await savePolicy(id, deductions);
+      const rates = {
+        dailyOT: otRates.dailyOT === "" ? 0 : Number(otRates.dailyOT),
+        weeklyOffOT: otRates.weeklyOffOT === "" ? 0 : Number(otRates.weeklyOffOT),
+        holidayOT: otRates.holidayOT === "" ? 0 : Number(otRates.holidayOT),
+      };
+      const res = await savePolicy(id, deductions, rates);
       if (res.success) {
         showToast("success", "Policy saved successfully.");
         // Reload to get fresh _ids from DB
@@ -230,8 +262,22 @@ const DepartmentPolicy = () => {
             <div>
               <h2 className="text-xl font-bold text-slate-100">{department.departmentName}</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Configure payroll deductions applied to all employees in this department.
+                Configure payroll deductions and overtime rates for this department.
               </p>
+              <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                  Daily: ₹{otRates.dailyOT || 0}/hr
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                  Weekly Off: ₹{otRates.weeklyOffOT || 0}/hr
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-400" />
+                  Holiday: ₹{otRates.holidayOT || 0}/hr
+                </span>
+              </div>
             </div>
             {/* Total badge */}
             <div className={`flex-shrink-0 rounded-xl border px-4 py-2 text-center
@@ -300,6 +346,86 @@ const DepartmentPolicy = () => {
               </svg>
               Add Deduction
             </button>
+          </div>
+
+          {/* Overtime Rates Section */}
+          <div className="border-t border-white/[0.07] px-6 py-5">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">
+              Overtime Rates (₹ / hour)
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Daily OT */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="dailyOT" className="text-[12.5px] font-medium text-slate-400">
+                  Daily OT Rate <span className="text-slate-600">(₹/hr)</span>
+                </label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-sm text-slate-600 pointer-events-none">₹</span>
+                  <input
+                    id="dailyOT"
+                    type="number"
+                    value={otRates.dailyOT}
+                    onChange={(e) => setOtRates(prev => ({ ...prev, dailyOT: e.target.value }))}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    disabled={saving}
+                    className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04]
+                               pl-7 pr-3 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none
+                               focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/15
+                               disabled:opacity-50 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Weekly Off OT */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="weeklyOffOT" className="text-[12.5px] font-medium text-slate-400">
+                  Weekly Off OT Rate <span className="text-slate-600">(₹/hr)</span>
+                </label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-sm text-slate-600 pointer-events-none">₹</span>
+                  <input
+                    id="weeklyOffOT"
+                    type="number"
+                    value={otRates.weeklyOffOT}
+                    onChange={(e) => setOtRates(prev => ({ ...prev, weeklyOffOT: e.target.value }))}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    disabled={saving}
+                    className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04]
+                               pl-7 pr-3 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none
+                               focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/15
+                               disabled:opacity-50 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Holiday OT */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="holidayOT" className="text-[12.5px] font-medium text-slate-400">
+                  Holiday OT Rate <span className="text-slate-600">(₹/hr)</span>
+                </label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-sm text-slate-600 pointer-events-none">₹</span>
+                  <input
+                    id="holidayOT"
+                    type="number"
+                    value={otRates.holidayOT}
+                    onChange={(e) => setOtRates(prev => ({ ...prev, holidayOT: e.target.value }))}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    disabled={saving}
+                    className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04]
+                               pl-7 pr-3 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none
+                               focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/15
+                               disabled:opacity-50 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Footer — error + save */}
