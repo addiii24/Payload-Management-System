@@ -261,12 +261,19 @@ const ShiftAttendancePage = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
+  /* Pagination and Search state */
+  const [page,         setPage]         = useState(1);
+  const [totalPages,   setTotalPages]   = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [searchQuery,  setSearchQuery]  = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   /* Load employees + active shifts once */
   useEffect(() => {
     const load = async () => {
       try {
         const [empRes, shiftRes] = await Promise.all([
-          api.get("/api/employees"),
+          api.get("/api/employees?limit=1000"),
           getShifts(true),
         ]);
         if (empRes.data.success) setEmployees(empRes.data.data?.employees ?? []);
@@ -276,16 +283,33 @@ const ShiftAttendancePage = () => {
     load();
   }, []);
 
+  /* Debounce search query */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1); // Reset page to 1 when search query changes
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   /* Fetch records */
   const fetchRecords = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getAttendance({ month, year });
-      if (res.success) setRecords(res.data.records);
+      const res = await getAttendance({ month, year, page, limit: 10, search: debouncedSearch });
+      if (res.success) {
+        setRecords(res.data);
+        setTotalPages(res.pagination?.totalPages || 1);
+        setTotalRecords(res.pagination?.total || 0);
+      }
       else showToast("error", res.message || "Fetch failed.");
     } catch { showToast("error", "Could not load attendance records."); }
     finally  { setLoading(false); setFetched(true); }
-  }, [month, year]);
+  }, [month, year, page, debouncedSearch]);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
 
   const handleUpsert = async (data) => {
     setSubmitting(true); setFormError("");
@@ -342,7 +366,7 @@ const ShiftAttendancePage = () => {
       <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-5 py-4">
         <div className="flex flex-col gap-1.5">
           <label className="text-[12px] font-medium text-slate-500">Month</label>
-          <select id="att-month" value={month} onChange={(e) => setMonth(Number(e.target.value))}
+          <select id="att-month" value={month} onChange={(e) => { setMonth(Number(e.target.value)); setPage(1); }}
             className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2
                        text-sm text-slate-200 outline-none focus:border-indigo-500/50">
             {MONTHS.map((m, i) => (
@@ -352,13 +376,24 @@ const ShiftAttendancePage = () => {
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-[12px] font-medium text-slate-500">Year</label>
-          <select id="att-year" value={year} onChange={(e) => setYear(Number(e.target.value))}
+          <select id="att-year" value={year} onChange={(e) => { setYear(Number(e.target.value)); setPage(1); }}
             className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2
                        text-sm text-slate-200 outline-none focus:border-indigo-500/50">
             {years.map((y) => (
               <option key={y} value={y} className="bg-[#0d1117]">{y}</option>
             ))}
           </select>
+        </div>
+        <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+          <label className="text-[12px] font-medium text-slate-500">Search</label>
+          <input
+            type="text"
+            placeholder="Search by Employee ID or Shift..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-3.5 py-2
+                       text-sm text-slate-200 placeholder-slate-600 outline-none focus:border-indigo-500/50 w-full"
+          />
         </div>
         <button id="att-search-btn" onClick={fetchRecords} disabled={loading}
           className="flex items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10
@@ -367,10 +402,10 @@ const ShiftAttendancePage = () => {
           {loading
             ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-400/30 border-t-indigo-400" />
             : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                <path d="M23 4v6h-6M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
               </svg>
           }
-          Search
+          Refresh
         </button>
       </div>
 
@@ -461,6 +496,34 @@ const ShiftAttendancePage = () => {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {fetched && totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between gap-4 border-t border-white/[0.07] pt-4">
+          <p className="text-xs text-slate-500">
+            Page <span className="font-semibold text-slate-300">{page}</span> of{" "}
+            <span className="font-semibold text-slate-300">{totalPages}</span> ({totalRecords} records)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(p - 1, 1))}
+              disabled={page === 1 || loading}
+              className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold
+                         text-slate-400 hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(p + 1, totalPages))}
+              disabled={page === totalPages || loading}
+              className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold
+                         text-slate-400 hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
 

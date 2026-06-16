@@ -39,13 +39,16 @@ export const deleteShift = async (id) => {
  * Fetch attendance records, optionally filtered.
  * @param {{ employeeId?: string, month?: number, year?: number }} params
  */
-export const getAttendance = async ({ employeeId, month, year } = {}) => {
+export const getAttendance = async ({ employeeId, month, year, page = 1, limit = 10, search = "" } = {}) => {
   const q = new URLSearchParams();
   if (employeeId) q.append("employeeId", employeeId);
   if (month)      q.append("month", month);
   if (year)       q.append("year", year);
+  q.append("page", page);
+  q.append("limit", limit);
+  if (search.trim()) q.append("search", search.trim());
   const res = await api.get(`/api/shift-attendance?${q}`);
-  return res.data; // { success, data: { total, records } }
+  return res.data;
 };
 
 /**

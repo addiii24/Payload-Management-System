@@ -32,9 +32,12 @@ export const generateSinglePayroll = async (employeeMongoId, { month, year }, fo
  * Fetch all payroll records for a pay period.
  * @param {{ month: number, year: number, department?: string }} params
  */
-export const getPayrollByPeriod = async ({ month, year, department = "" }) => {
+export const getPayrollByPeriod = async ({ month, year, department = "", page = 1, limit = 10, search = "" }) => {
   const q = new URLSearchParams({ month, year });
   if (department) q.append("department", department);
+  q.append("page", page);
+  q.append("limit", limit);
+  if (search.trim()) q.append("search", search.trim());
   const res = await api.get(`/api/payroll?${q}`);
   return res.data; // { success, data: { month, year, count, summary, payrolls } }
 };

@@ -12,7 +12,7 @@
  *    • Inline payslip detail panel (deduction breakdown)
  */
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout.jsx";
 import { getPayrollByPeriod } from "../services/payrollService.js";
@@ -209,6 +209,11 @@ const PayrollHistory = () => {
   const [bulkLoading,   setBulkLoading]   = useState(false);
   const [toast,         setToast]         = useState(null);
 
+  /* Pagination and Search state */
+  const [page,         setPage]         = useState(1);
+  const [searchQuery,  setSearchQuery]  = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const years = Array.from({ length: 7 }, (_, i) => currentYear - 5 + i);
 
   const showToast = (type, msg) => {
@@ -216,12 +221,26 @@ const PayrollHistory = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
+  /* Debounce search query */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1); // Reset page to 1 when search query changes
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   /* ── Fetch records ── */
   const handleFetch = useCallback(async () => {
     setLoading(true);
-    setData(null);
     try {
-      const res = await getPayrollByPeriod({ month, year });
+      const res = await getPayrollByPeriod({
+        month,
+        year,
+        page,
+        limit: 10,
+        search: debouncedSearch
+      });
       if (res.success) setData(res.data);
       else showToast("error", res.message || "Failed to load records.");
     } catch (err) {
@@ -229,7 +248,11 @@ const PayrollHistory = () => {
     } finally {
       setLoading(false);
     }
-  }, [month, year]);
+  }, [month, year, page, debouncedSearch]);
+
+  useEffect(() => {
+    handleFetch();
+  }, [handleFetch]);
 
   /* ── Single payslip download ── */
   const handleDownloadOne = async (record) => {
@@ -290,7 +313,7 @@ const PayrollHistory = () => {
         <div className="flex flex-col gap-1.5">
           <label className="text-[12px] font-medium text-slate-500">Month</label>
           <select id="hist-month" value={month}
-            onChange={(e) => setMonth(Number(e.target.value))}
+            onChange={(e) => { setMonth(Number(e.target.value)); setPage(1); }}
             className="rounded-xl border border-white/[0.08] bg-white/[0.04]
                        px-3 py-2 text-sm text-slate-200 outline-none
                        focus:border-indigo-500/50 transition-all">
@@ -304,7 +327,7 @@ const PayrollHistory = () => {
         <div className="flex flex-col gap-1.5">
           <label className="text-[12px] font-medium text-slate-500">Year</label>
           <select id="hist-year" value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
+            onChange={(e) => { setYear(Number(e.target.value)); setPage(1); }}
             className="rounded-xl border border-white/[0.08] bg-white/[0.04]
                        px-3 py-2 text-sm text-slate-200 outline-none
                        focus:border-indigo-500/50 transition-all">
@@ -315,6 +338,20 @@ const PayrollHistory = () => {
         </div>
 
         {/* Search */}
+        <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+          <label className="text-[12px] font-medium text-slate-500">Search</label>
+          <input
+            type="text"
+            placeholder="Search by Employee Name or ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04]
+                       px-3.5 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none
+                       focus:border-indigo-500/50 transition-all"
+          />
+        </div>
+
+        {/* Refresh button */}
         <button id="hist-search-btn" onClick={handleFetch} disabled={loading}
           className="flex items-center gap-2 rounded-xl border border-indigo-500/30
                      bg-indigo-500/10 px-4 py-2 text-sm font-medium text-indigo-300
@@ -322,10 +359,10 @@ const PayrollHistory = () => {
           {loading
             ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-400/30 border-t-indigo-400" />
             : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                <path d="M23 4v6h-6M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
               </svg>
           }
-          Search
+          Refresh
         </button>
 
         {/* Bulk download — only shown when results exist */}
@@ -341,7 +378,7 @@ const PayrollHistory = () => {
                   <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                 </svg>
             }
-            Download All Payslips ({data.count})
+            Download All ({data.count})
           </button>
         )}
       </div>
@@ -453,6 +490,34 @@ const PayrollHistory = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {data && data.pagination && data.pagination.totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between gap-4 border-t border-white/[0.07] pt-4">
+              <p className="text-xs text-slate-500">
+                Page <span className="font-semibold text-slate-300">{page}</span> of{" "}
+                <span className="font-semibold text-slate-300">{data.pagination.totalPages}</span> ({data.pagination.total} records)
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(p - 1, 1))}
+                  disabled={page === 1 || loading}
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold
+                             text-slate-400 hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.min(p + 1, data.pagination.totalPages))}
+                  disabled={page === data.pagination.totalPages || loading}
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold
+                             text-slate-400 hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

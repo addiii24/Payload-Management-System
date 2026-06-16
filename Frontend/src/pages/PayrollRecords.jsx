@@ -10,7 +10,7 @@
  *    • Delete (void) a record with confirmation
  */
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout.jsx";
 import { getPayrollByPeriod, deletePayroll } from "../services/payrollService.js";
@@ -261,6 +261,11 @@ const PayrollRecords = () => {
   const [selected,   setSelected]   = useState(null);    // payroll record in slip modal
   const [toast,      setToast]      = useState(null);
 
+  /* Pagination and Search state */
+  const [page,         setPage]         = useState(1);
+  const [searchQuery,  setSearchQuery]  = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const years = Array.from({ length: 7 }, (_, i) => currentYear - 5 + i);
 
   const showToast = (type, msg) => {
@@ -268,12 +273,27 @@ const PayrollRecords = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
+  /* Debounce search query */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1); // Reset page to 1 when search query changes
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   /* ── Fetch records ── */
   const handleFetch = useCallback(async () => {
     setLoading(true);
-    setData(null);
     try {
-      const res = await getPayrollByPeriod({ month, year, department: dept });
+      const res = await getPayrollByPeriod({
+        month,
+        year,
+        department: dept,
+        page,
+        limit: 10,
+        search: debouncedSearch
+      });
       if (res.success) setData(res.data);
       else showToast("error", res.message || "Fetch failed.");
     } catch (err) {
@@ -281,7 +301,11 @@ const PayrollRecords = () => {
     } finally {
       setLoading(false);
     }
-  }, [month, year, dept]);
+  }, [month, year, dept, page, debouncedSearch]);
+
+  useEffect(() => {
+    handleFetch();
+  }, [handleFetch]);
 
   /* ── Void handler (called from modal) ── */
   const handleVoid = async (id) => {
@@ -330,7 +354,7 @@ const PayrollRecords = () => {
           <label className="text-[12px] font-medium text-slate-500">Month</label>
           <select
             id="filter-month" value={month}
-            onChange={(e) => setMonth(Number(e.target.value))}
+            onChange={(e) => { setMonth(Number(e.target.value)); setPage(1); }}
             className="rounded-xl border border-white/[0.08] bg-white/[0.04]
                        px-3 py-2 text-sm text-slate-200 outline-none
                        focus:border-indigo-500/50 transition-all"
@@ -346,7 +370,7 @@ const PayrollRecords = () => {
           <label className="text-[12px] font-medium text-slate-500">Year</label>
           <select
             id="filter-year" value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
+            onChange={(e) => { setYear(Number(e.target.value)); setPage(1); }}
             className="rounded-xl border border-white/[0.08] bg-white/[0.04]
                        px-3 py-2 text-sm text-slate-200 outline-none
                        focus:border-indigo-500/50 transition-all"
@@ -363,14 +387,28 @@ const PayrollRecords = () => {
           <input
             id="filter-dept" type="text"
             placeholder="Filter by department…"
-            value={dept} onChange={(e) => setDept(e.target.value)}
+            value={dept} onChange={(e) => { setDept(e.target.value); setPage(1); }}
             className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04]
                        px-3 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none
                        focus:border-indigo-500/50 transition-all"
           />
         </div>
 
-        {/* Search button */}
+        {/* Search */}
+        <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+          <label className="text-[12px] font-medium text-slate-500">Search</label>
+          <input
+            type="text"
+            placeholder="Search by Employee Name or ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04]
+                       px-3.5 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none
+                       focus:border-indigo-500/50 transition-all"
+          />
+        </div>
+
+        {/* Refresh button */}
         <button
           id="fetch-records-btn"
           onClick={handleFetch}
@@ -381,9 +419,11 @@ const PayrollRecords = () => {
         >
           {loading
             ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-400/30 border-t-indigo-400" />
-            : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M23 4v6h-6M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
           }
-          Search
+          Refresh
         </button>
       </div>
 
@@ -471,6 +511,34 @@ const PayrollRecords = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {data && data.pagination && data.pagination.totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between gap-4 border-t border-white/[0.07] pt-4">
+              <p className="text-xs text-slate-500">
+                Page <span className="font-semibold text-slate-300">{page}</span> of{" "}
+                <span className="font-semibold text-slate-300">{data.pagination.totalPages}</span> ({data.pagination.total} records)
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(p - 1, 1))}
+                  disabled={page === 1 || loading}
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold
+                             text-slate-400 hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.min(p + 1, data.pagination.totalPages))}
+                  disabled={page === data.pagination.totalPages || loading}
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold
+                             text-slate-400 hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

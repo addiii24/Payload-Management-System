@@ -3,44 +3,77 @@
  * @description Main dashboard page using the shared Layout component.
  */
 
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout.jsx";
+import api from "../api/api.js";
 
-const STATS = [
-  {
-    id: "stat-employees", label: "Total Employees", value: "—",
-    iconBg: "bg-indigo-500/15", iconColor: "text-indigo-400",
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  },
-  {
-    id: "stat-payroll", label: "Monthly Payroll", value: "—",
-    iconBg: "bg-violet-500/15", iconColor: "text-violet-400",
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-  },
-  {
-    id: "stat-departments", label: "Departments", value: "—",
-    iconBg: "bg-purple-500/15", iconColor: "text-purple-400",
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>,
-  },
-  {
-    id: "stat-payslips", label: "Payslips Generated", value: "—",
-    iconBg: "bg-sky-500/15", iconColor: "text-sky-400",
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
-  },
-];
+const INR = (n) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(n ?? 0);
 
 const QUICK_ACTIONS = [
   { id: "qa-employees", emoji: "👥", label: "Manage Employees",  desc: "Add, edit, or remove staff records",  to: "/employees" },
-  { id: "qa-payroll",   emoji: "💰", label: "Run Payroll",        desc: "Process monthly salary disbursement", to: null },
-  { id: "qa-payslips",  emoji: "📄", label: "Generate Payslips",  desc: "Create and download salary slips",     to: null },
-  { id: "qa-reports",   emoji: "📊", label: "View Reports",       desc: "Analytics and financial summaries",    to: null },
+  { id: "qa-payroll",   emoji: "💰", label: "Run Payroll",        desc: "Process monthly salary disbursement", to: "/payroll/generate" },
+  { id: "qa-payslips",  emoji: "📄", label: "Generate Payslips",  desc: "Create and download salary slips",     to: "/payroll/history" },
+  { id: "qa-reports",   emoji: "📊", label: "View Reports",       desc: "Analytics and financial summaries",    to: "/payroll/records" },
 ];
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalEmployees: "—",
+    totalDepartments: "—",
+    monthlyPayroll: "—",
+    payslipsGenerated: "—",
+  });
+
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.get("/api/dashboard/stats");
+        if (res.data.success) {
+          setStats(res.data.data);
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const statCards = [
+    {
+      id: "stat-employees", label: "Total Employees", value: stats.totalEmployees,
+      iconBg: "bg-indigo-500/15", iconColor: "text-indigo-400",
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    },
+    {
+      id: "stat-payroll", label: "Monthly Payroll", value: typeof stats.monthlyPayroll === "number" ? INR(stats.monthlyPayroll) : stats.monthlyPayroll,
+      iconBg: "bg-violet-500/15", iconColor: "text-violet-400",
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+    },
+    {
+      id: "stat-departments", label: "Departments", value: stats.totalDepartments,
+      iconBg: "bg-purple-500/15", iconColor: "text-purple-400",
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>,
+    },
+    {
+      id: "stat-payslips", label: "Payslips Generated", value: stats.payslipsGenerated,
+      iconBg: "bg-sky-500/15", iconColor: "text-sky-400",
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+    },
+  ];
 
   return (
     <Layout title="Dashboard">
@@ -57,7 +90,7 @@ const Dashboard = () => {
 
       {/* Stats grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {STATS.map((stat, i) => (
+        {statCards.map((stat, i) => (
           <div
             key={stat.id}
             id={stat.id}
@@ -70,7 +103,11 @@ const Dashboard = () => {
               {stat.icon}
             </div>
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-[26px] font-bold leading-none text-slate-100">{stat.value}</span>
+              {loading ? (
+                <div className="h-6 w-20 animate-pulse rounded bg-white/10 mt-1" />
+              ) : (
+                <span className="text-[26px] font-bold leading-none text-slate-100">{stat.value}</span>
+              )}
               <span className="truncate text-[12.5px] text-slate-500">{stat.label}</span>
             </div>
           </div>

@@ -183,10 +183,21 @@ export const getPayrollByPeriod = async (req, res) => {
       filter.department = { $regex: req.query.department.trim(), $options: "i" };
     }
 
-    const payrolls = await Payroll.find(filter).sort({ employeeCode: 1 });
+    const { page, limit, search } = req.query;
+    if (search && search.trim()) {
+      const searchRegex = { $regex: search.trim(), $options: "i" };
+      filter.$or = [
+        { employeeName: searchRegex },
+        { employeeCode: searchRegex }
+      ];
+    }
 
-    /* Aggregate summary */
-    const summary = payrolls.reduce(
+    // 1. Fetch ALL matching payrolls to calculate summary and total count
+    const allMatching = await Payroll.find(filter);
+    const total = allMatching.length;
+
+    /* Aggregate summary over ALL matching records */
+    const summary = allMatching.reduce(
       (acc, p) => {
         acc.totalGross     += p.grossSalary;
         acc.totalDeduction += p.totalDeduction;
@@ -201,12 +212,33 @@ export const getPayrollByPeriod = async (req, res) => {
       summary[k] = Math.round(summary[k] * 100) / 100;
     });
 
-    return sendSuccess(res, 200, "Payroll records fetched.", {
-      month,
-      year,
-      count: payrolls.length,
-      summary,
-      payrolls,
+    // 2. Paginate payrolls for the table view
+    const pageVal = Math.max(parseInt(page, 10) || 1, 1);
+    const limitVal = Math.min(parseInt(limit, 10) || 10, 100);
+    const skipVal = (pageVal - 1) * limitVal;
+
+    const payrolls = await Payroll.find(filter)
+      .sort({ employeeCode: 1 })
+      .skip(skipVal)
+      .limit(limitVal);
+
+    // Return the response, keeping data structure compatible with frontend expectations
+    return res.status(200).json({
+      success: true,
+      message: "Payroll records fetched.",
+      data: {
+        month,
+        year,
+        count: total,
+        summary,
+        payrolls,
+        pagination: {
+          total,
+          page: pageVal,
+          limit: limitVal,
+          totalPages: Math.ceil(total / limitVal)
+        }
+      }
     });
   } catch (err) {
     console.error("[getPayrollByPeriod]", err);

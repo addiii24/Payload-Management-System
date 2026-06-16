@@ -19,6 +19,8 @@ import payslipRouter         from "./route/payslip.route.js";
 import shiftRouter           from "./route/shift.route.js";
 import shiftAttendanceRouter from "./route/shiftAttendance.route.js";
 import overtimeRouter        from "./route/overtime.route.js";
+import dashboardRouter       from "./route/dashboard.route.js";
+
 
 // ─────────────────────────────────────────────
 //  App Initialisation
@@ -84,6 +86,10 @@ app.use("/api/shift-attendance", shiftAttendanceRouter);
 
 /** Overtime CRUD  →  /api/overtime */
 app.use("/api/overtime", overtimeRouter);
+
+/** Dashboard Stats  →  /api/dashboard */
+app.use("/api/dashboard", dashboardRouter);
+
 
 
 // ─────────────────────────────────────────────

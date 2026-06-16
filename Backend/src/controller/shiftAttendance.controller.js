@@ -78,7 +78,7 @@ export const upsertAttendance = async (req, res) => {
 export const getAttendance = async (req, res) => {
   try {
     const filter = {};
-    const { employeeId, month, year } = req.query;
+    const { employeeId, month, year, page, limit, search } = req.query;
 
     if (employeeId) {
       if (!isValidId(employeeId)) return sendError(res, 400, "Invalid employee ID.");
@@ -95,10 +95,42 @@ export const getAttendance = async (req, res) => {
       filter.year = y;
     }
 
+    if (search && search.trim()) {
+      const searchRegex = { $regex: search.trim(), $options: "i" };
+      
+      // Find matching employee IDs
+      const matchingEmployees = await Employee.find({
+        $or: [
+          { employeeId: searchRegex },
+          { name: searchRegex }
+        ]
+      }).select("_id");
+      const employeeIds = matchingEmployees.map((e) => e._id);
+
+      // Find matching shift IDs
+      const matchingShifts = await Shift.find({
+        shiftName: searchRegex
+      }).select("_id");
+      const shiftIds = matchingShifts.map((s) => s._id);
+
+      filter.$or = [
+        { employeeId: { $in: employeeIds } },
+        { shiftId: { $in: shiftIds } }
+      ];
+    }
+
+    const total = await ShiftAttendance.countDocuments(filter);
+
+    const pageVal = Math.max(parseInt(page, 10) || 1, 1);
+    const limitVal = Math.min(parseInt(limit, 10) || 10, 100);
+    const skipVal = (pageVal - 1) * limitVal;
+
     const records = await ShiftAttendance.find(filter)
       .populate("employeeId", "name employeeId department")
       .populate("shiftId",    "shiftName shiftCode allowancePerDay")
-      .sort({ year: -1, month: -1, createdAt: -1 });
+      .sort({ year: -1, month: -1, createdAt: -1 })
+      .skip(skipVal)
+      .limit(limitVal);
 
     // Compute allowance amount for each record
     const enriched = records.map((r) => {
@@ -110,9 +142,16 @@ export const getAttendance = async (req, res) => {
       return obj;
     });
 
-    return sendSuccess(res, 200, "Attendance records fetched.", {
-      total: enriched.length,
-      records: enriched,
+    return res.status(200).json({
+      success: true,
+      message: "Attendance records fetched.",
+      data: enriched,
+      pagination: {
+        total,
+        page: pageVal,
+        limit: limitVal,
+        totalPages: Math.ceil(total / limitVal)
+      }
     });
   } catch (err) {
     console.error("[getAttendance]", err);
