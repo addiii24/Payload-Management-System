@@ -12,6 +12,7 @@
  */
 
 import PDFDocument from "pdfkit";
+import document  from "pdfkit";
 
 const COMPANY_NAME    = "JAIHIND AUTOTECH INDUSTRIES";
 const COMPANY_SUBLINE = "GAT NO - 118/1, AT POST WASULI, Taluka - KHED,DIST - PUNE, Maharashtra 410501";
@@ -91,16 +92,16 @@ export const generatePayslipPDF = (payroll, employee) => {
 
   /* ── HEADER BAND ──────────────────────────────────────────── */
   doc.rect(0, 0, pageWidth, 110).fill("#1e1b4b");
-  doc.fillColor("#ffffff").fontSize(22).font("Helvetica-Bold")
+  doc.fontSize(22).font("Helvetica-Bold")
      .text(COMPANY_NAME, LEFT, 28, { width: contentWidth, align: "center" });
-  doc.fillColor("#a5b4fc").fontSize(11).font("Helvetica")
+  doc.fontSize(11).font("Helvetica")
      .text(COMPANY_SUBLINE, LEFT, 56, { width: contentWidth, align: "center" });
-  doc.fillColor("#a5b4fc").fontSize(7).font("Helvetica")
+  doc.fontSize(7).font("Helvetica")
      .text(COMPANY_SUBLINE2, LEFT, 56, { width: contentWidth, align: "center" });
-  doc.fillColor("#a5b4fc").fontSize(8).font("Helvetica")
+  document.fontSize(8).font("Helvetica")
      .text(COMPANY_GSTIN, LEFT, 56, { width: contentWidth, align: "center" });
     
-  doc.fillColor("#c7d2fe").fontSize(10).font("Helvetica-Bold")
+  doc.fontSize(10).font("Helvetica-Bold")
      .text(
        `PAYSLIP — ${MONTH_NAMES[payroll.month].toUpperCase()} ${payroll.year}`,
        LEFT, 80, { width: contentWidth, align: "center" }
@@ -162,10 +163,10 @@ export const generatePayslipPDF = (payroll, employee) => {
 
   // Gross Salary total row
   y += 4;
-  doc.moveTo(LEFT, y).lineTo(RIGHT, y).strokeColor("#e2e8f0").stroke();
+  doc.moveTo(LEFT, y).lineTo(RIGHT, y).strokeColor("#ffffffff").stroke();
   y += 4;
-  doc.rect(LEFT, y, contentWidth, 26).fill("#dcfce7");
-  doc.fillColor("#14532d").fontSize(10).font("Helvetica-Bold")
+  doc.rect(LEFT, y, contentWidth, 26).fill("#fefefeff");
+  doc.fillColor("#000000ff").fontSize(10).font("Helvetica-Bold")
      .text("Gross Salary", LEFT + 10, y + 8)
      .text(inr(payroll.grossSalary), LEFT, y + 8, { width: contentWidth - 8, align: "right" });
   y += 34;
@@ -191,7 +192,7 @@ export const generatePayslipPDF = (payroll, employee) => {
       y = drawRow(doc, LEFT, contentWidth, y, i % 2 === 0 ? "#ffffff" : "#f8fafc", [
         { text: d.name,                                       x: LEFT + 8 },
         { text: `${Number(d.percentage).toFixed(2)}%`,        x: LEFT + 275, color: "#64748b" },
-        { text: `− ${inr(d.amount)}`,                         align: "right", color: "#dc2626", font: "Helvetica-Bold" },
+        { text: `− ${inr(d.amount)}`,                         align: "right", color: "#000000ff", font: "Helvetica-Bold" },
       ]);
     });
   }
@@ -201,7 +202,7 @@ export const generatePayslipPDF = (payroll, employee) => {
   doc.moveTo(LEFT, y).lineTo(RIGHT, y).strokeColor("#e2e8f0").stroke();
   y += 4;
   doc.rect(LEFT, y, contentWidth, 26).fill("#fef2f2");
-  doc.fillColor("#991b1b").fontSize(10).font("Helvetica-Bold")
+  doc.fillColor("#ffffffff").fontSize(10).font("Helvetica-Bold")
      .text("Total Deductions", LEFT + 8, y + 8)
      .text(`− ${inr(payroll.totalDeduction)}`, LEFT, y + 8, { width: contentWidth - 8, align: "right" });
   y += 34;

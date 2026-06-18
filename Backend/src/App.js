@@ -20,6 +20,7 @@ import shiftRouter           from "./route/shift.route.js";
 import shiftAttendanceRouter from "./route/shiftAttendance.route.js";
 import overtimeRouter        from "./route/overtime.route.js";
 import dashboardRouter       from "./route/dashboard.route.js";
+import attendanceRouter      from "./route/attendance.route.js";
 
 
 // ─────────────────────────────────────────────
@@ -86,6 +87,9 @@ app.use("/api/shift-attendance", shiftAttendanceRouter);
 
 /** Overtime CRUD  →  /api/overtime */
 app.use("/api/overtime", overtimeRouter);
+
+/** Monthly Attendance CRUD  →  /api/attendance */
+app.use("/api/attendance", attendanceRouter);
 
 /** Dashboard Stats  →  /api/dashboard */
 app.use("/api/dashboard", dashboardRouter);

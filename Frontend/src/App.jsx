@@ -37,6 +37,7 @@ const ShiftMaster        = lazy(() => import("./pages/ShiftMaster.jsx"));
 const ShiftAttendancePage = lazy(() => import("./pages/ShiftAttendance.jsx"));
 const OvertimeEntry       = lazy(() => import("./pages/OvertimeEntry.jsx"));
 const BulkImport          = lazy(() => import("./pages/BulkImport.jsx"));
+const Attendance          = lazy(() => import("./pages/Attendance.jsx"));
 
 
 /* ── Full-page loading fallback shown during chunk download ── */
@@ -70,6 +71,7 @@ function App() {
             <Route path="/payroll/history"         element={<PayrollHistory />} />
             <Route path="/shift-master"            element={<ShiftMaster />} />
             <Route path="/shift-attendance"        element={<ShiftAttendancePage />} />
+            <Route path="/attendance"              element={<Attendance />} />
             <Route path="/overtime-entry"          element={<OvertimeEntry />} />
             <Route path="/bulk-import"             element={<BulkImport />} />
 
