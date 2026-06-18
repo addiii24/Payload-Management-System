@@ -92,7 +92,7 @@ const Login = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-100 tracking-tight leading-none">PayrollPro</h1>
-            <p className="text-xs text-slate-500 mt-1">Payroll Management System</p>
+            <p className="text-xs text-slate-500 mt-1">JAIHIND AUTOTECH INDUSTRIES</p>
           </div>
         </div>
 

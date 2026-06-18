@@ -13,14 +13,15 @@
 
 import PDFDocument from "pdfkit";
 
-const COMPANY_NAME    = "Automotive Company";
-const COMPANY_SUBLINE = "Payroll Management System";
+const COMPANY_NAME    = "JAIHIND AUTOTECH INDUSTRIES";
+const COMPANY_SUBLINE = "GAT NO - 118/1, AT POST WASULI, Taluka - KHED,DIST - PUNE, Maharashtra 410501";
+const COMPANY_SUBLINE2 = "(CORPORATE ADDRESS - Gat. No. 1181, Near Philips, Post- Vasuli, Pune, Maharashtra 410501)"
+const COMPANY_GSTIN = "27AALFJ3691D1Z"
 
 const MONTH_NAMES = [
   "", "January","February","March","April","May","June",
   "July","August","September","October","November","December",
 ];
-
 const inr = (n) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency", currency: "INR", maximumFractionDigits: 2,
@@ -94,6 +95,11 @@ export const generatePayslipPDF = (payroll, employee) => {
      .text(COMPANY_NAME, LEFT, 28, { width: contentWidth, align: "center" });
   doc.fillColor("#a5b4fc").fontSize(11).font("Helvetica")
      .text(COMPANY_SUBLINE, LEFT, 56, { width: contentWidth, align: "center" });
+  doc.fillColor("#a5b4fc").fontSize(7).font("Helvetica")
+     .text(COMPANY_SUBLINE2, LEFT, 56, { width: contentWidth, align: "center" });
+  doc.fillColor("#a5b4fc").fontSize(8).font("Helvetica")
+     .text(COMPANY_GSTIN, LEFT, 56, { width: contentWidth, align: "center" });
+    
   doc.fillColor("#c7d2fe").fontSize(10).font("Helvetica-Bold")
      .text(
        `PAYSLIP — ${MONTH_NAMES[payroll.month].toUpperCase()} ${payroll.year}`,
