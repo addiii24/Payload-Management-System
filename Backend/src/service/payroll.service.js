@@ -14,6 +14,7 @@
  *  Deductions (PF, ESI) are calculated on basic+hra+other only.
  */
 
+import mongoose from "mongoose";
 import Department       from "../model/department.model.js";
 import DepartmentPolicy from "../model/departmentPolicy.model.js";
 import ShiftAttendance  from "../model/shiftAttendance.model.js";

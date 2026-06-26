@@ -103,6 +103,13 @@ const employeeSchema = new Schema(
         default: false,
       },
     },
+
+    /** Generic metadata store for future modules without database migrations */
+    metadata: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
   },
   {
     /**

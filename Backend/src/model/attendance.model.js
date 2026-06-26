@@ -72,6 +72,13 @@ const attendanceSchema = new Schema(
       workingDays: { type: Number, default: 0, min: 0 },
       canteenEligibleDays: { type: Number, default: 0, min: 0 },
     },
+
+    /** Generic metadata store for future modules without database migrations */
+    metadata: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
   },
   {
     timestamps: true,

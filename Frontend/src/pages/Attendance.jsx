@@ -20,6 +20,7 @@ const currentMonth = new Date().getMonth() + 1;
 
 const Attendance = () => {
   const [employees, setEmployees] = useState([]);
+  const [policies, setPolicies] = useState([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -37,20 +38,26 @@ const Attendance = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Preload all employees on page mount
+  // Preload all employees and policies on page mount
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get("/api/employees?limit=1000");
-        if (res.data.success) {
-          setEmployees(res.data.data?.employees ?? []);
+        const [empRes, polRes] = await Promise.all([
+          api.get("/api/employees?limit=1000"),
+          api.get("/api/attendance-policy"),
+        ]);
+        if (empRes.data.success) {
+          setEmployees(empRes.data.data?.employees ?? []);
+        }
+        if (polRes.data.success) {
+          setPolicies(polRes.data.data?.policies ?? []);
         }
       } catch (err) {
-        console.error("Failed to fetch employees list", err);
-        showToast("error", "Failed to load employee list.");
+        console.error("Failed to fetch preload data", err);
+        showToast("error", "Failed to load employee list and policies.");
       }
     };
-    fetchEmployees();
+    fetchData();
   }, []);
 
   // Smart helper to pre-populate blank attendance
@@ -255,6 +262,20 @@ const Attendance = () => {
             attendance={attendance}
             onChange={handleAttendanceChange}
             readOnly={loading}
+            maxPaidLeavePerMonth={
+              policies.find(
+                (p) =>
+                  p.departmentName?.toLowerCase() ===
+                  employees.find((e) => e._id === selectedEmployeeId)?.department?.toLowerCase()
+              )?.maxPaidLeavePerMonth ?? 1
+            }
+            canteenEnrolled={
+              (() => {
+                const emp = employees.find((e) => e._id === selectedEmployeeId);
+                return emp?.benefits?.canteen?.status && emp.benefits.canteen.status !== "Not Enrolled";
+              })()
+            }
+            existingSummary={existingRecord?.summary}
           />
 
           {/* Action Buttons */}

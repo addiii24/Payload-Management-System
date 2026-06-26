@@ -112,6 +112,13 @@ const payrollSchema = new Schema(
       enum: ["processed", "revised"],
       default: "processed",
     },
+
+    /** Generic metadata store for future modules without database migrations */
+    metadata: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
   },
   {
     timestamps: true,

@@ -82,6 +82,47 @@ const DeductionPanel = ({ record, onClose }) => {
           <span className="font-semibold text-slate-200">{MONTHS[record.month - 1]} {record.year}</span>
         </div>
 
+        {/* ── Attendance summary snapshot ── */}
+        {record.workingDays !== undefined && (
+          <div className="border-b border-white/[0.07] px-6 py-3.5 bg-white/[0.01]">
+            <h4 className="mb-2 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500">
+              Attendance Snapshot
+            </h4>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-400 font-mono">
+              <div className="flex justify-between">
+                <span>Working Days:</span>
+                <span className="font-semibold text-slate-200">{record.workingDays}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Paid Days:</span>
+                <span className="font-semibold text-sky-400">{record.paidDays}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Present Days:</span>
+                <span className="font-semibold text-emerald-400">{record.presentDays}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>LOP Days:</span>
+                <span className="font-semibold text-rose-400">{record.lopDays}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Holidays:</span>
+                <span className="font-semibold text-amber-400">{record.companyHolidays}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Weekly Off:</span>
+                <span className="font-semibold text-indigo-400">{record.weeklyOff}</span>
+              </div>
+              {record.canteenEligibleDays > 0 && (
+                <div className="flex justify-between col-span-2 mt-1 pt-1 border-t border-white/[0.03]">
+                  <span>Canteen Eligible Days:</span>
+                  <span className="font-semibold text-orange-400">{record.canteenEligibleDays}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Section A: Earnings */}
         <div className="px-6 py-3.5 border-b border-white/[0.07]">
           <h4 className="mb-2 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500">

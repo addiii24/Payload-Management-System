@@ -61,6 +61,13 @@ const departmentPolicySchema = new Schema(
       weeklyOffOT: { type: Number, default: 0, min: 0 },  // weekly-off day
       holidayOT:   { type: Number, default: 0, min: 0 },  // national / festival holiday
     },
+
+    /** Generic metadata store for future modules without database migrations */
+    metadata: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
   },
   {
     timestamps: true,

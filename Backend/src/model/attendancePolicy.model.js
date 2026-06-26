@@ -140,6 +140,13 @@ const attendancePolicySchema = new Schema(
       },
       default: "Calendar Days",
     },
+
+    /** Generic metadata store for future modules without database migrations */
+    metadata: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
+    },
   },
   {
     timestamps: true,
