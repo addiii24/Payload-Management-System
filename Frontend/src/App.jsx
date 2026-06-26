@@ -39,6 +39,7 @@ const OvertimeEntry       = lazy(() => import("./pages/OvertimeEntry.jsx"));
 const BulkImport          = lazy(() => import("./pages/BulkImport.jsx"));
 const Attendance          = lazy(() => import("./pages/Attendance.jsx"));
 const HolidayCalendar     = lazy(() => import("./pages/HolidayCalendar.jsx"));
+const AttendancePolicyPage = lazy(() => import("./pages/AttendancePolicyPage.jsx"));
 
 
 /* ── Full-page loading fallback shown during chunk download ── */
@@ -74,6 +75,7 @@ function App() {
             <Route path="/shift-attendance"        element={<ShiftAttendancePage />} />
             <Route path="/attendance"              element={<Attendance />} />
             <Route path="/holiday-calendar"        element={<HolidayCalendar />} />
+            <Route path="/attendance-policy"       element={<AttendancePolicyPage />} />
             <Route path="/overtime-entry"          element={<OvertimeEntry />} />
             <Route path="/bulk-import"             element={<BulkImport />} />
 
