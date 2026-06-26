@@ -68,6 +68,41 @@ const employeeSchema = new Schema(
       trim: true,
       default: null,
     },
+
+    /** Employee benefits eligibility details */
+    benefits: {
+      canteen: {
+        status: {
+          type: String,
+          enum: ["Not Enrolled", "Per Day Deduction", "Fixed Monthly Deduction"],
+          default: "Not Enrolled",
+        },
+        effectiveFrom: {
+          type: Date,
+          default: null,
+        },
+      },
+      transport: {
+        type: Boolean,
+        default: false,
+      },
+      hostel: {
+        type: Boolean,
+        default: false,
+      },
+      uniform: {
+        type: Boolean,
+        default: false,
+      },
+      attendanceIncentive: {
+        type: Boolean,
+        default: false,
+      },
+      nightShiftMeal: {
+        type: Boolean,
+        default: false,
+      },
+    },
   },
   {
     /**

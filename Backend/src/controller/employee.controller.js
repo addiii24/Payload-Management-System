@@ -94,6 +94,7 @@ export const createEmployee = async (req, res) => {
       basicSalary,
       pfNumber,
       esiNumber,
+      benefits,
     } = req.body;
 
     // 2️⃣  Create & persist the document
@@ -106,6 +107,7 @@ export const createEmployee = async (req, res) => {
       basicSalary,
       pfNumber:  pfNumber  || null,
       esiNumber: esiNumber || null,
+      benefits,
     });
 
     return sendSuccess(res, 201, "Employee created successfully.", employee);

@@ -73,6 +73,15 @@ const payrollSchema = new Schema(
     otherAllowances:  { type: Number, default: 0,    min: 0 },
     grossSalary:      { type: Number, required: true, min: 0 },   // = basic + hra + other
 
+    /* ── Attendance Summary Snapshot ── */
+    workingDays:         { type: Number, default: 0 },
+    paidDays:            { type: Number, default: 0 },
+    presentDays:         { type: Number, default: 0 },
+    lopDays:             { type: Number, default: 0 },
+    companyHolidays:     { type: Number, default: 0 },
+    weeklyOff:           { type: Number, default: 0 },
+    canteenEligibleDays: { type: Number, default: 0 },
+
     /* ─────────────────────────────────────────────────────────────────────
        SECTION B — DEDUCTIONS
        Applied as percentages of grossSalary only.

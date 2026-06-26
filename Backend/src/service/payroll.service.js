@@ -80,12 +80,52 @@ const calcOvertime = async (employeeId, month, year) => {
    SINGLE EMPLOYEE PAYROLL
 ═══════════════════════════════════════════════════════════════ */
 export const calculatePayroll = async (employee, month, year) => {
+  // Fetch Attendance record
+  const Attendance = mongoose.model("Attendance");
+  const attendance = await Attendance.findOne({ employeeId: employee._id, month, year });
+  if (!attendance) {
+    throw new Error(
+      `Attendance record not found for employee "${employee.name}" (${employee.employeeId}) for ${month}/${year}. ` +
+      `Please save the attendance record before generating payroll.`
+    );
+  }
 
-  /* Step 1 — Gross = basic + hra + other */
-  const basicSalary     = employee.basicSalary    ?? 0;
-  const hra             = employee.hra             ?? 0;
-  const otherAllowances = employee.otherAllowances ?? 0;
-  const grossSalary     = round2(basicSalary + hra + otherAllowances);
+  const workingDays = attendance.summary.workingDays ?? 0;
+  const paidDays = attendance.summary.paidDays ?? 0;
+  const presentDays = attendance.summary.present ?? 0;
+  const lopDays = attendance.summary.leaveWithoutPay ?? 0;
+  const companyHolidays = attendance.summary.holidays ?? 0;
+  const weeklyOff = attendance.summary.weeklyOff ?? 0;
+  const canteenEligibleDays = attendance.summary.canteenEligibleDays ?? 0;
+
+  // Fetch department attendance policy to determine calculation method
+  const AttendancePolicyModel = mongoose.model("AttendancePolicy");
+  const attendancePolicy = await AttendancePolicyModel.findOne({
+    departmentName: { $regex: new RegExp("^" + employee.department.trim() + "$", "i") }
+  });
+  const calcMethod = attendancePolicy?.attendanceCalculationMethod ?? "Calendar Days";
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let prorationFactor = 1.0;
+
+  if (calcMethod === "Calendar Days") {
+    prorationFactor = daysInMonth > 0 ? (paidDays / daysInMonth) : 0;
+  } else if (calcMethod === "Working Days") {
+    // Paid Days excluding weekly off and holidays = present + (paidLeave - LOP)
+    const activePaidDays = presentDays + (attendance.summary.paidLeave - lopDays);
+    prorationFactor = workingDays > 0 ? (activePaidDays / workingDays) : 0;
+  }
+  prorationFactor = Math.min(1.0, Math.max(0, prorationFactor));
+
+  /* Step 1 — Gross = basic + hra + other (prorated) */
+  const baseBasic = employee.basicSalary ?? 0;
+  const baseHra = employee.hra ?? 0;
+  const baseOther = employee.otherAllowances ?? 0;
+
+  const basicSalary = round2(baseBasic * prorationFactor);
+  const hra = round2(baseHra * prorationFactor);
+  const otherAllowances = round2(baseOther * prorationFactor);
+  const grossSalary = round2(basicSalary + hra + otherAllowances);
 
   /* Step 2 — Deductions (applied ONLY to grossSalary) */
   const dept = await Department.findOne({
@@ -131,6 +171,14 @@ export const calculatePayroll = async (employee, month, year) => {
     designation:       employee.designation,
     month,
     year,
+    /* attendance snapshot */
+    workingDays,
+    paidDays,
+    presentDays,
+    lopDays,
+    companyHolidays,
+    weeklyOff,
+    canteenEligibleDays,
     /* earnings */
     basicSalary,
     hra,

@@ -21,7 +21,16 @@ const getStatusBadge = (status) => {
   return option.colorClass;
 };
 
-const AttendanceTable = ({ month, year, attendance = {}, onChange, readOnly = false }) => {
+const AttendanceTable = ({
+  month,
+  year,
+  attendance = {},
+  onChange,
+  readOnly = false,
+  maxPaidLeavePerMonth = 1,
+  canteenEnrolled = false,
+  existingSummary = null,
+}) => {
   // Generate days in the selected month
   const daysInMonth = new Date(year, month, 0).getDate();
   const daysArray = [];
@@ -54,7 +63,22 @@ const AttendanceTable = ({ month, year, attendance = {}, onChange, readOnly = fa
     else if (status === "CL" || status === "SL" || status === "PL") paidLeave++;
   });
 
-  const paidDays = present + weeklyOff + holidays + paidLeave;
+  // Calculate metrics
+  const leaveWithoutPay = existingSummary
+    ? (existingSummary.leaveWithoutPay ?? 0)
+    : Math.max(0, paidLeave - maxPaidLeavePerMonth);
+
+  const paidDays = existingSummary
+    ? (existingSummary.paidDays ?? 0)
+    : present + (paidLeave - leaveWithoutPay) + weeklyOff + holidays;
+
+  const workingDays = existingSummary
+    ? (existingSummary.workingDays ?? 0)
+    : Math.max(0, daysInMonth - weeklyOff - holidays);
+
+  const canteenEligibleDays = existingSummary
+    ? (existingSummary.canteenEligibleDays ?? 0)
+    : (canteenEnrolled ? present : 0);
 
   // Quick fill actions
   const fillAll = (status) => {
@@ -109,21 +133,24 @@ const AttendanceTable = ({ month, year, attendance = {}, onChange, readOnly = fa
       )}
 
       {/* Summary Cards Grid */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9">
         {[
           { label: "Present Days (P)", value: present, color: "text-emerald-400 border-emerald-500/15 bg-emerald-500/5" },
           { label: "Absent Days (A)", value: absent, color: "text-red-400 border-red-500/15 bg-red-500/5" },
           { label: "Weekly Off (WO)", value: weeklyOff, color: "text-indigo-400 border-indigo-500/15 bg-indigo-500/5" },
           { label: "Holidays (H)", value: holidays, color: "text-amber-400 border-amber-500/15 bg-amber-500/5" },
           { label: "Paid Leave (L)", value: paidLeave, color: "text-purple-400 border-purple-500/15 bg-purple-500/5" },
-          { label: "Total Paid Days", value: paidDays, color: "text-sky-400 border-sky-500/15 bg-sky-500/5 font-bold" },
+          { label: "LOP Days (LWP)", value: leaveWithoutPay, color: "text-rose-400 border-rose-500/15 bg-rose-500/5" },
+          { label: "Working Days", value: workingDays, color: "text-slate-400 border-white/[0.08] bg-white/[0.02]" },
+          { label: "Canteen Days", value: canteenEligibleDays, color: "text-orange-400 border-orange-500/15 bg-orange-500/5" },
+          { label: "Total Paid Days", value: paidDays, color: "text-sky-400 border-sky-500/15 bg-sky-500/5 font-bold shadow-[0_0_15px_rgba(56,189,248,0.1)]" },
         ].map((card, index) => (
           <div
             key={index}
             className={`rounded-2xl border p-4 text-center shadow-md transition-all hover:scale-[1.01] ${card.color}`}
           >
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{card.label}</div>
-            <div className="mt-1.5 text-2xl font-bold">{card.value}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 leading-tight min-h-[30px] flex items-center justify-center">{card.label}</div>
+            <div className="mt-1 text-2xl font-bold">{card.value}</div>
           </div>
         ))}
       </div>

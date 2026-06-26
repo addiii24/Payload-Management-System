@@ -121,6 +121,11 @@ export const generatePayslipPDF = (payroll, employee) => {
   if (employee?.pfNumber)  empFields.push(["PF Number",  employee.pfNumber]);
   if (employee?.esiNumber) empFields.push(["ESI Number", employee.esiNumber]);
 
+  if (payroll.workingDays !== undefined) {
+    empFields.push(["Paid / Working Days", `${payroll.paidDays} / ${payroll.workingDays}`]);
+    empFields.push(["Present / LOP Days", `${payroll.presentDays} / ${payroll.lopDays}`]);
+  }
+
   const colMid = LEFT + contentWidth / 2 + 10;
 
   empFields.forEach(([label, value], idx) => {
