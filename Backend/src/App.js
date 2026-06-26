@@ -21,6 +21,8 @@ import shiftAttendanceRouter from "./route/shiftAttendance.route.js";
 import overtimeRouter        from "./route/overtime.route.js";
 import dashboardRouter       from "./route/dashboard.route.js";
 import attendanceRouter      from "./route/attendance.route.js";
+import holidayRouter         from "./route/holiday.route.js";
+import attendancePolicyRouter from "./route/attendancePolicy.route.js";
 
 
 // ─────────────────────────────────────────────
@@ -90,6 +92,12 @@ app.use("/api/overtime", overtimeRouter);
 
 /** Monthly Attendance CRUD  →  /api/attendance */
 app.use("/api/attendance", attendanceRouter);
+
+/** Company Holiday Calendar  →  /api/holidays */
+app.use("/api/holidays", holidayRouter);
+
+/** Department Attendance Policy  →  /api/attendance-policy */
+app.use("/api/attendance-policy", attendancePolicyRouter);
 
 /** Dashboard Stats  →  /api/dashboard */
 app.use("/api/dashboard", dashboardRouter);
