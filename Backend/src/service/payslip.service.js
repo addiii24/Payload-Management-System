@@ -13,10 +13,11 @@
 
 import PDFDocument from "pdfkit";
 
-const COMPANY_NAME    = "JAIHIND AUTOTECH INDUSTRIES";
-const COMPANY_SUBLINE = "GAT NO - 118/1, AT POST WASULI, Taluka - KHED,DIST - PUNE, Maharashtra 410501";
-const COMPANY_SUBLINE2 = "(CORPORATE ADDRESS - Gat. No. 1181, Near Philips, Post- Vasuli, Pune, Maharashtra 410501)";
-const COMPANY_GSTIN = "27AALFJ3691D1Z";
+/**
+ * Fallback values used when Company Profile or Authorized Signature
+ * have not yet been configured in Settings.
+ */
+const FALLBACK_FOOTER = "This is a system-generated payslip.";
 
 const MONTH_NAMES = [
   "", "January","February","March","April","May","June",
@@ -74,14 +75,38 @@ const drawRow = (doc, LEFT, contentWidth, y, rowBg, cells) => {
 /* ════════════════════════════════════════════════════════════════
    MAIN EXPORT
 ════════════════════════════════════════════════════════════════ */
-export const generatePayslipPDF = (payroll, employee) => {
+/**
+ * Generate a payslip PDF in memory.
+ *
+ * @param {object}      payroll   - Payroll record (lean Mongoose doc)
+ * @param {object|null} employee  - Employee record with pfNumber / esiNumber
+ * @param {object|null} company   - CompanyProfile singleton from DB (may be null)
+ * @param {object|null} signature - AuthorizedSignature singleton from DB (may be null)
+ * @returns {PDFDocument} PDFKit document (not yet ended — caller pipes it)
+ */
+export const generatePayslipPDF = (payroll, employee, company = null, signature = null) => {
+  // ── Resolve dynamic company values ──────────────────────────
+  const companyName     = company?.companyName     || "";
+  const companyAddress  = company?.companyAddress  || "";
+  const corporateAddr   = company?.corporateAddress || "";
+  const companyPhone    = company?.phone            || "";
+  const companyEmail    = company?.email            || "";
+  const companyGST      = company?.gstNumber        || "";
+  const companyLogo     = company?.companyLogo      || "";
+
+  // ── Resolve dynamic signature values ────────────────────────
+  const authorityName        = signature?.authorityName        || "";
+  const authorityDesignation = signature?.authorityDesignation || "";
+  const signatureImage       = signature?.signatureImage       || "";
+  const footerMessage        = signature?.footerMessage        || FALLBACK_FOOTER;
+
   const doc = new PDFDocument({
     size: "A4",
     margin: 40,
     bufferPages: false,
     info: {
       Title: `Payslip - ${payroll.employeeName} - ${MONTH_NAMES[payroll.month]} ${payroll.year}`,
-      Author: COMPANY_NAME,
+      Author: companyName || "Payroll System",
     },
   });
 
@@ -92,39 +117,77 @@ export const generatePayslipPDF = (payroll, employee) => {
 
   /* ── HEADER BAND ──────────────────────────────────────────── */
   doc.fillColor("#000000");
-  
+
+  let headerY = 25;
+
+  // Optional: company logo (Base64 Data URI)
+  if (companyLogo) {
+    try {
+      // Extract the raw base64 buffer from the Data URI
+      const base64Data = companyLogo.split(",")[1];
+      if (base64Data) {
+        const imgBuffer = Buffer.from(base64Data, "base64");
+        doc.image(imgBuffer, LEFT, headerY, { height: 40, fit: [100, 40], align: "left" });
+        headerY += 6;
+      }
+    } catch {
+      // Logo rendering failed — continue without it
+    }
+  }
+
   // Company Name
-  doc.fontSize(14).font("Helvetica-Bold")
-     .text(COMPANY_NAME, LEFT, 25, { width: contentWidth, align: "center" });
-     
-  // Company Subline
-  doc.fontSize(8).font("Helvetica")
-     .text(COMPANY_SUBLINE, LEFT, 42, { width: contentWidth, align: "center" });
-     
-  // Company Subline 2
-  doc.fontSize(7).font("Helvetica")
-     .text(COMPANY_SUBLINE2, LEFT, 52, { width: contentWidth, align: "center" });
-     
-  // Contact Us
-  doc.fontSize(7.5).font("Helvetica")
-     .text("Mobile number : +91 96721 64194, E-mail : hrpune@jaihindautotech.com", LEFT, 62, { width: contentWidth, align: "center" });
-     
+  if (companyName) {
+    doc.fontSize(14).font("Helvetica-Bold")
+       .text(companyName, LEFT, headerY, { width: contentWidth, align: "center" });
+    headerY += 14;
+  }
+
+  // Company Address
+  if (companyAddress) {
+    doc.fontSize(8).font("Helvetica")
+       .text(companyAddress, LEFT, headerY, { width: contentWidth, align: "center" });
+    headerY += 10;
+  }
+
+  // Corporate Address
+  if (corporateAddr) {
+    doc.fontSize(7).font("Helvetica")
+       .text(`(CORPORATE ADDRESS - ${corporateAddr})`, LEFT, headerY, { width: contentWidth, align: "center" });
+    headerY += 10;
+  }
+
+  // Contact line (phone + email)
+  const contactParts = [];
+  if (companyPhone) contactParts.push(`Mobile: ${companyPhone}`);
+  if (companyEmail) contactParts.push(`E-mail: ${companyEmail}`);
+  if (contactParts.length > 0) {
+    doc.fontSize(7.5).font("Helvetica")
+       .text(contactParts.join(", "), LEFT, headerY, { width: contentWidth, align: "center" });
+    headerY += 10;
+  }
+
   // GSTIN
-  doc.fontSize(7.5).font("Helvetica")
-     .text(`GSTIN: ${COMPANY_GSTIN}`, LEFT, 72, { width: contentWidth, align: "center" });
-    
-  // Title
+  if (companyGST) {
+    doc.fontSize(7.5).font("Helvetica")
+       .text(`GSTIN: ${companyGST}`, LEFT, headerY, { width: contentWidth, align: "center" });
+    headerY += 10;
+  }
+
+  // Payslip title
   doc.fontSize(11).font("Helvetica-Bold")
      .text(
        `PAYSLIP — ${MONTH_NAMES[payroll.month].toUpperCase()} ${payroll.year}`,
-       LEFT, 85, { width: contentWidth, align: "center" }
+       LEFT, headerY, { width: contentWidth, align: "center" }
      );
+  headerY += 15;
 
   // Line below header
-  doc.moveTo(LEFT, 102).lineTo(RIGHT, 102).lineWidth(1.2).strokeColor("#000000").stroke();
+  doc.moveTo(LEFT, headerY).lineTo(RIGHT, headerY).lineWidth(1.2).strokeColor("#000000").stroke();
+  headerY += 2;
+
 
   /* ── EMPLOYEE INFO ────────────────────────────────────────── */
-  let y = 112;
+  let y = headerY + 8;
   y = drawSectionLabel(doc, "EMPLOYEE INFORMATION", LEFT, RIGHT, y);
 
   const empFields = [
@@ -338,11 +401,44 @@ export const generatePayslipPDF = (payroll, employee) => {
 
   /* ── FOOTER ───────────────────────────────────────────────── */
   doc.moveTo(LEFT, y + 4).lineTo(RIGHT, y + 4).lineWidth(1).strokeColor("#000000").stroke();
+
+  // Authorized signature block
+  if (authorityName || authorityDesignation || signatureImage) {
+    let sigY = y + 10;
+
+    // Signature image (optional)
+    if (signatureImage) {
+      try {
+        const base64Data = signatureImage.split(",")[1];
+        if (base64Data) {
+          const imgBuffer = Buffer.from(base64Data, "base64");
+          doc.image(imgBuffer, RIGHT - 120, sigY, { height: 30, fit: [100, 30], align: "right" });
+        }
+      } catch {
+        // Skip if image rendering fails
+      }
+    }
+
+    // Authority name & designation
+    if (authorityName) {
+      doc.fillColor("#000000").fontSize(8).font("Helvetica-Bold")
+         .text(authorityName, RIGHT - 120, sigY + 32, { width: 120, align: "center" });
+    }
+    if (authorityDesignation) {
+      doc.fillColor("#000000").fontSize(7.5).font("Helvetica")
+         .text(authorityDesignation, RIGHT - 120, sigY + 43, { width: 120, align: "center" });
+    }
+
+    y = Math.max(y + 60, sigY + 55);
+    doc.moveTo(LEFT, y).lineTo(RIGHT, y).lineWidth(0.5).strokeColor("#000000").stroke();
+    y += 4;
+  } else {
+    y += 10;
+  }
+
+  // Footer message
   doc.fillColor("#000000").fontSize(7.5).font("Helvetica")
-     .text(
-       "This is a system-generated payslip and does not require a signature.",
-       LEFT, y + 8, { width: contentWidth, align: "center" }
-     );
+     .text(footerMessage, LEFT, y, { width: contentWidth, align: "center" });
 
   doc.end();
   return doc;

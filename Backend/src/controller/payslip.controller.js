@@ -18,6 +18,8 @@ import { PassThrough } from "stream";
 
 import Payroll from "../model/payroll.model.js";
 import Employee from "../model/employee.model.js";
+import CompanyProfile from "../model/companyProfile.model.js";
+import AuthorizedSignature from "../model/authorizedSignature.model.js";
 import {
   generatePayslipPDF,
   buildPayslipFilename,
@@ -45,18 +47,24 @@ export const downloadPayslip = async (req, res) => {
       .select("pfNumber esiNumber")
       .lean();
 
-    /* 3. Build filename */
+    /* 3. Load company profile and authorized signature for PDF header/footer */
+    const [companyProfile, authorizedSignature] = await Promise.all([
+      CompanyProfile.findOne().lean(),
+      AuthorizedSignature.findOne().lean(),
+    ]);
+
+    /* 4. Build filename */
     const filename = buildPayslipFilename(payroll);
 
-    /* 4. Set response headers */
+    /* 5. Set response headers */
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${filename}"`
     );
 
-    /* 5. Generate and pipe PDF directly to response */
-    const doc = generatePayslipPDF(payroll, employee);
+    /* 6. Generate and pipe PDF directly to response */
+    const doc = generatePayslipPDF(payroll, employee, companyProfile, authorizedSignature);
     doc.pipe(res);
 
     // PDFKit emits 'end' automatically after doc.end() in the service
@@ -99,6 +107,12 @@ export const bulkDownloadPayslips = async (req, res) => {
       employeesArr.map((e) => [e._id.toString(), e])
     );
 
+    /* ── Load company profile and signature once for all PDFs ── */
+    const [companyProfile, authorizedSignature] = await Promise.all([
+      CompanyProfile.findOne().lean(),
+      AuthorizedSignature.findOne().lean(),
+    ]);
+
     /* ── Set response headers BEFORE streaming ── */
     const zipFilename = buildZipFilename(month, year);
     res.setHeader("Content-Type", "application/zip");
@@ -124,7 +138,7 @@ export const bulkDownloadPayslips = async (req, res) => {
 
       // Use a PassThrough to bridge PDFKit output into archiver
       const pass = new PassThrough();
-      const doc = generatePayslipPDF(payroll, employee);
+      const doc = generatePayslipPDF(payroll, employee, companyProfile, authorizedSignature);
       doc.pipe(pass);
 
       const pdfFilename = buildPayslipFilename(payroll);

@@ -23,6 +23,7 @@ import dashboardRouter       from "./route/dashboard.route.js";
 import attendanceRouter      from "./route/attendance.route.js";
 import holidayRouter         from "./route/holiday.route.js";
 import attendancePolicyRouter from "./route/attendancePolicy.route.js";
+import settingsRouter        from "./route/settings.route.js";
 
 
 // ─────────────────────────────────────────────
@@ -98,6 +99,9 @@ app.use("/api/holidays", holidayRouter);
 
 /** Department Attendance Policy  →  /api/attendance-policy */
 app.use("/api/attendance-policy", attendancePolicyRouter);
+
+/** Settings (Company Profile / Authorized Signature / Branding)  →  /api/settings */
+app.use("/api/settings", settingsRouter);
 
 /** Dashboard Stats  →  /api/dashboard */
 app.use("/api/dashboard", dashboardRouter);
